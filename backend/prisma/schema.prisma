@@ -19,6 +19,9 @@ model User {
   role     Role     @default(USER)
   clubs    Club[]   @relation("ClubOwner")
   bookings Booking[]
+
+  
+  @@map("user")
 }
 
 enum Role {

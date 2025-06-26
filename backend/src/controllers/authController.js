@@ -8,13 +8,20 @@ const prisma = new PrismaClient();
 exports.register = async (req, res) => {
   const { name, email, password } = req.body;
   try {
+    console.log('Datos recibidos:', req.body);
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
       data: { name, email, password: hashedPassword }
     });
     res.status(201).json(user);
   } catch (err) {
+    if (err.code=='P2002'){
+      res.status(400).json({error:'Ya existe un usuario con ese mail.'});
+    } else {
+    console.error('Error en register:', err);
     res.status(400).json({ error: err.message });
+    }
   }
 };
 
@@ -37,3 +44,5 @@ exports.login = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+
