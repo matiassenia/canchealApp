@@ -13,7 +13,18 @@ function Clubs() {
   useEffect(() => {
     const fetchClubs = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clubs`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clubs`, {
+          headers: {
+            authorization:  `Bearer ${localStorage.getItem('token')}`,
+          }
+        });
+
+        if (res.status === 401 || res.status === 403) {
+          localStorage.removeItem('token');
+          router.push('login');
+          return;
+        }
+
         const data = await res.json();
         setClubs(data);
       } catch (err) {

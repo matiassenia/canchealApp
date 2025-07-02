@@ -23,7 +23,21 @@ export default function Login() {
       if (!res.ok) throw new Error(data.error || 'Login failed');
 
       localStorage.setItem('token', data.token);
-      router.push('/clubs');
+
+      let role;
+      try {
+      const [, payload] = data.token.split('.');
+      const decoded = JSON.parse(atob(payload));
+      role = decoded.role;
+      localStorage.setItem('role',role);
+      } catch {
+        throw new Error ('Token inválido');
+      }
+      if (role === 'OWNER') {
+        router.push('/owner/dashboard');
+      } else {
+        router.push('/clubs');
+      }
     } catch (err) {
       setError(err.message);
     }

@@ -18,7 +18,21 @@ exports.getFieldsByClub = async (req, res) => {
 
 exports.createField = async (req, res) => {
   const { name, type, imageUrl, clubId } = req.body;
+  const userId = req.user.id;
+
+  if (!name || !type || !clubId) {
+    return res.status(400).json({ error: 'Faltan campos requeridos' });
+  }
+
   try {
+    const club = await prisma.club.findUnique({
+      where: { id: parseInt(clubId) },
+    });
+
+    if (!club || club.ownerId !== userId) {
+      return res.status(403).json({ error: 'No tienes permisos para agregar canchas a este club' });
+    }
+
     const field = await prisma.field.create({
       data: {
         name,
@@ -27,10 +41,10 @@ exports.createField = async (req, res) => {
         clubId: parseInt(clubId)
       }
     });
+
     res.status(201).json(field);
   } catch (err) {
+    console.error(err);
     res.status(400).json({ error: err.message });
   }
 };
-
-
