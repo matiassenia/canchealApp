@@ -14,8 +14,14 @@ export default function FieldAvailabilitySelector({ onChange, initialAvailabilit
   const [selectedSlots, setSelectedSlots] = useState([]);
 
   useEffect(() => {
+  const stringify = (arr) => JSON.stringify(arr.sort((a, b) => a.weekday - b.weekday));
+  if (stringify(selectedSlots) !== stringify(initialAvailability)) {
     setSelectedSlots(initialAvailability);
+  }
   }, [initialAvailability]);
+
+
+  
 
   const toggleSlot = (weekday, time) => {
     const startTime = time;
@@ -48,7 +54,7 @@ export default function FieldAvailabilitySelector({ onChange, initialAvailabilit
     }
 
     setSelectedSlots(updated);
-    onChange(updated); // Notifica al componente padre
+    onChange?.(updated); 
   };
 
   const isSelected = (weekday, time) => {
