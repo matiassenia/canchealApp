@@ -27,18 +27,25 @@ export default function ClubDashboard() {
   };
 
   useEffect(() => {
-    if (!clubId) return;
+    if (!clubId || isNaN(clubId)) return;
 
     const fetchFieldsAndAvailability = async () => {
+      try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/fields/${clubId}`);
+      if (!res.ok) throw new Error ("No se pudo cargar las canchas")
       const data = await res.json();
       setFields(data);
 
       // Precarga la disponibilidad del primer campo
-      if (data[0]) {
+      if (data.length > 0) {
         const availRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/availability/${data[0].id}`);
+        if (!availRes.ok) throw new Error('No se pudo cargar la disponibilidad');
+
         const avail = await availRes.json();
         setAvailability(avail);
+      }
+    } catch (err) {
+      console.error("❌ Error al cargar canchas:", err.message);
       }
     };
 
@@ -129,7 +136,7 @@ export default function ClubDashboard() {
         {/* Calendario de disponibilidad */}
         <div className="mb-4">
           <label className="block font-medium mb-2">Seleccionar disponibilidad:</label>
-          <FieldAvailabilitySelector onChange={setAvailability} />
+          <FieldAvailabilitySelector onChange={setAvailability} initialAvailability={availability}/>
         </div>
 
         {error && <p className="text-red-600 mb-2">{error}</p>}

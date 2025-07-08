@@ -7,11 +7,20 @@ export default function CreateClub() {
   const [zone, setZone] = useState('');
   const [description, setDescription] = useState('');
   const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(null);
+    setIsLoading(true);
+
     const token = localStorage.getItem('token');
+    if (!token) {
+      setError('No estás autenticado');
+      router.push('/login');
+      return;
+    }
 
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clubs`, {
@@ -29,6 +38,8 @@ export default function CreateClub() {
       router.push('/owner/dashboard');
     } catch (err) {
       setError(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -72,9 +83,10 @@ export default function CreateClub() {
 
         <button
           type="submit"
-          className="bg-green-600 text-white w-full py-2 rounded-lg font-semibold hover:bg-green-700 transition"
+          disabled={isLoading}
+          className="bg-green-600 text-white w-full py-2 rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50"
         >
-          Crear Club
+          {isLoading ? 'Creando...' : 'Crear Club'}
         </button>
       </form>
     </div>

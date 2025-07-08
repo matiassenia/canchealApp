@@ -11,30 +11,56 @@ export default function AddFieldPage() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
+
+
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
+  const token = localStorage.getItem('token');
+
+  if (!token) {
+    setError('Token no encontrado. Iniciá sesión nuevamente.');
+    return;
+  }
+
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/fields`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ name, type, imageUrl, clubId: parseInt(id) })
+    });
+
+    const text = await res.text();
+
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/fields`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ name, type, imageUrl, clubId: parseInt(id) })
-      });
+      const data = JSON.parse(text);
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error al crear la cancha');
+      if (!res.ok) {
+        console.error('❌ Error desde el backend:', data);
+        throw new Error(data.error || 'Error al crear la cancha');
+      }
 
+      console.log('✅ Cancha creada correctamente:', data);
       setSuccess('Cancha creada correctamente');
       setName('');
       setType('');
       setImageUrl('');
-    } catch (err) {
-      setError(err.message);
+      setError(null);
+
+    } catch (jsonErr) {
+      console.error('❌ La respuesta no es JSON válido:', text);
+      setError('Respuesta inesperada del servidor (no es JSON válido)');
     }
-  };
+
+  } catch (err) {
+    console.error('❌ Error de red o fetch:', err);
+    setError('Error de conexión con el servidor');
+  }
+};
+
+
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">

@@ -11,6 +11,7 @@ function Clubs() {
   const router = useRouter();
 
   useEffect(() => {
+    console.log('✅ API_URL desde entorno:', process.env.NEXT_PUBLIC_API_URL);
     const fetchClubs = async () => {
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clubs`, {
@@ -28,7 +29,7 @@ function Clubs() {
         const data = await res.json();
         console.log("Respuesta de /clubs:", data);
         setClubs(Array.isArray(data) ? data : (data.clubs || []));
-        
+
       } catch (err) {
         console.error('Error al obtener clubes:', err);
       }
