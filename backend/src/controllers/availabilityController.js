@@ -16,18 +16,29 @@ exports.getAvailability = async (req, res) => {
 };
 
 exports.setAvailability = async (req, res) => {
-  const { fieldId, weekday, startTime, endTime } = req.body;
+  const { fieldId, slots } = req.body;
+
+  if (!fieldId || !Array.isArray(slots)) {
+    return res.status(400).json({ error: 'Datos incompletos' });
+  }
+
   try {
-    const available = await prisma.availability.create({
-      data: {
+    // Borra disponibilidad anterior de esa cancha
+    await prisma.availability.deleteMany({ where: { fieldId } });
+
+    // Inserta todos los nuevos slots
+    await prisma.availability.createMany({
+      data: slots.map(({ weekday, startTime, endTime }) => ({
         fieldId,
         weekday,
         startTime,
         endTime
-      }
+      }))
     });
-    res.status(201).json(available);
+
+    res.status(201).json({ message: 'Disponibilidad guardada correctamente' });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error('Error en setAvailability:', err);
+    res.status(500).json({ error: err.message });
   }
 };

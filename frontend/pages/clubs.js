@@ -26,7 +26,9 @@ function Clubs() {
         }
 
         const data = await res.json();
-        setClubs(data);
+        console.log("Respuesta de /clubs:", data);
+        setClubs(Array.isArray(data) ? data : (data.clubs || []));
+        
       } catch (err) {
         console.error('Error al obtener clubes:', err);
       }
