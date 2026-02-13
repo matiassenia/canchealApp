@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import jwtDecode from 'jwt-decode';
+import { apiFetch } from '../lib/api';
 
 export default function OwnerDashboard() {
   const [clubs, setClubs] = useState([]);
@@ -13,7 +14,7 @@ export default function OwnerDashboard() {
 
   const fetchClubs = async (ownerId) => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clubs?ownerId=${ownerId}`);
+      const res = await apiFetch(`/clubs?ownerId=${ownerId}`);
       const data = await res.json();
       setClubs(data);
     } catch (err) {
@@ -36,11 +37,10 @@ export default function OwnerDashboard() {
     const token = localStorage.getItem('token');
     const decoded = jwtDecode(token);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clubs`, {
+      const res = await apiFetch('/clubs', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           name,

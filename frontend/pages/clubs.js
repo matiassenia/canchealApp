@@ -5,20 +5,16 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Navbar from '../components/Navbar';
 import withAuth from '../components/withAuth';
+import { apiFetch } from '../lib/api';
 
 function Clubs() {
   const [clubs, setClubs] = useState([]);
   const router = useRouter();
 
   useEffect(() => {
-    console.log('✅ API_URL desde entorno:', process.env.NEXT_PUBLIC_API_URL);
     const fetchClubs = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clubs`, {
-          headers: {
-            authorization:  `Bearer ${localStorage.getItem('token')}`,
-          }
-        });
+        const res = await apiFetch('/clubs');
 
         if (res.status === 401 || res.status === 403) {
           localStorage.removeItem('token');

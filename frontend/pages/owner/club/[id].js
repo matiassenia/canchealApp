@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import FieldAvailabilitySelector from '../../../components/FieldAvailabilitySelector';
+import { apiFetch } from '../../../lib/api';
 
 export default function ClubDashboard() {
   const router = useRouter();
@@ -16,12 +17,7 @@ export default function ClubDashboard() {
   const [success, setSuccess] = useState(null);
 
   const fetchFields = async () => {
-    const token = localStorage.getItem('token');
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/fields/${clubId}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
+    const res = await apiFetch(`/fields/${clubId}`);
     const data = await res.json();
     setFields(data);
   };
@@ -31,14 +27,14 @@ export default function ClubDashboard() {
 
     const fetchFieldsAndAvailability = async () => {
       try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/fields/${clubId}`);
+      const res = await apiFetch(`/fields/${clubId}`);
       if (!res.ok) throw new Error ("No se pudo cargar las canchas")
       const data = await res.json();
       setFields(data);
 
       // Precarga la disponibilidad del primer campo
       if (data.length > 0) {
-        const availRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/availability/${data[0].id}`);
+        const availRes = await apiFetch(`/availability/${data[0].id}`);
         if (!availRes.ok) throw new Error('No se pudo cargar la disponibilidad');
 
         const avail = await availRes.json();
@@ -54,7 +50,6 @@ export default function ClubDashboard() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem('token');
     const formData = new FormData();
     formData.append('name', name);
     formData.append('type', type);
@@ -62,11 +57,8 @@ export default function ClubDashboard() {
     if (image) formData.append('image', image);
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/fields`, {
+      const res = await apiFetch('/fields', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
         body: formData
       });
       const data = await res.json();
@@ -75,11 +67,10 @@ export default function ClubDashboard() {
       // Enviar disponibilidad
       await Promise.all(
         availability.map((slot) =>
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/availability`, {
+          apiFetch('/availability', {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
+              'Content-Type': 'application/json'
             },
             body: JSON.stringify({ ...slot, fieldId: data.id })
           })

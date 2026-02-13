@@ -3,6 +3,7 @@
 //
 import { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
+import { apiFetch } from '../lib/api';
 
 export default function Availability() {
   const [fields, setFields] = useState([]);
@@ -13,7 +14,7 @@ export default function Availability() {
   useEffect(() => {
     const fetchFields = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/fields`);
+        const res = await apiFetch('/fields');
         const data = await res.json();
         setFields(data);
       } catch (err) {
@@ -27,7 +28,7 @@ export default function Availability() {
   const handleCheckAvailability = async () => {
     if (!selectedFieldId) return;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/availability/${selectedFieldId}`);
+      const res = await apiFetch(`/availability/${selectedFieldId}`);
       const data = await res.json();
       setAvailability(data);
     } catch (err) {
@@ -37,12 +38,10 @@ export default function Availability() {
 
   const handleBooking = async (slot) => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/bookings`, {
+      const res = await apiFetch('/bookings', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           fieldId: selectedFieldId,

@@ -2,6 +2,7 @@
 // 🏢 Controlador de Clubes (`clubController.js`)
 //js
 const { PrismaClient } = require('@prisma/client');
+const { sendError } = require('../utils/errorResponse');
 const prisma = new PrismaClient();
 
 exports.getClubs = async (req, res) => {
@@ -11,13 +12,22 @@ exports.getClubs = async (req, res) => {
     });
     res.json(clubs);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error en getClubs:', err);
+    sendError(res, err, { status: 500, message: 'No se pudieron obtener los clubes.' });
   }
 };
 
 exports.createClub = async (req, res) => {
   const { name, address, zone, description } = req.body;
-  const ownerId = req.user.id;
+  const ownerId = req.user && req.user.id;
+
+  if (!ownerId) {
+    return res.status(401).json({ error: 'Token missing or invalid' });
+  }
+
+  if (!name || !address || !zone || !description) {
+    return res.status(400).json({ error: 'Faltan campos requeridos.' });
+  }
 
   try {
     const newClub = await prisma.club.create({
@@ -31,6 +41,7 @@ exports.createClub = async (req, res) => {
     });
     res.status(201).json(newClub);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error('Error en createClub:', err);
+    sendError(res, err, { status: 400, message: 'No se pudo crear el club.' });
   }
 };

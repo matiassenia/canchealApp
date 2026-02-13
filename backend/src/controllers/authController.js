@@ -3,31 +3,43 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
+const { sendError } = require('../utils/errorResponse');
 const prisma = new PrismaClient();
 
 exports.register = async (req, res) => {
   const { name, email, password } = req.body;
   try {
-    console.log('Datos recibidos:', req.body);
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'name, email y password son requeridos.' });
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
       data: { name, email, password: hashedPassword }
     });
-    res.status(201).json(user);
+    res.status(201).json({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    });
   } catch (err) {
-    if (err.code=='P2002'){
-      res.status(400).json({error:'Ya existe un usuario con ese mail.'});
-    } else {
     console.error('Error en register:', err);
-    res.status(400).json({ error: err.message });
-    }
+    sendError(res, err, { status: 400, message: 'No se pudo registrar el usuario.' });
   }
 };
 
 exports.login = async (req, res) => {
   const { email, password } = req.body;
   try {
+    if (!email || !password) {
+      return res.status(400).json({ error: 'email y password son requeridos.' });
+    }
+
+    if (!process.env.JWT_SECRET) {
+      return res.status(500).json({ error: 'Configuración inválida del servidor.' });
+    }
+
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) return res.status(404).json({ error: 'User not found' });
 
@@ -41,7 +53,8 @@ exports.login = async (req, res) => {
     );
     res.json({ token });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error en login:', err);
+    sendError(res, err, { status: 500, message: 'No se pudo iniciar sesión.' });
   }
 };
 

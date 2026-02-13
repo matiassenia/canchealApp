@@ -1,5 +1,6 @@
 import { useRouter } from 'next/router';
 import { useState } from 'react';
+import { apiFetch } from '../../../lib/api';
 
 export default function AddFieldPage() {
   const router = useRouter();
@@ -23,11 +24,10 @@ export default function AddFieldPage() {
   }
 
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/fields`, {
+    const res = await apiFetch('/fields', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({ name, type, imageUrl, clubId: parseInt(id) })
     });

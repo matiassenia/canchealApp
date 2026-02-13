@@ -1,30 +1,82 @@
 // 📆 Controlador de Reservas (`bookingController.js`)
-//js
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient, BookingStatus } = require('@prisma/client');
+const { sendError } = require('../utils/errorResponse');
 const prisma = new PrismaClient();
 
+function parseDate(value) {
+  const d = new Date(value);
+  if (!value || Number.isNaN(d.getTime())) return null;
+  return d;
+}
+
 exports.createBooking = async (req, res) => {
-  const { fieldId, date, timeSlot } = req.body;
-  const userId = req.user.id;
+  const { fieldId, startAt, endAt } = req.body;
+  const userId = req.user && req.user.id;
+
+  if (!userId) {
+    return res.status(401).json({ error: 'Token missing or invalid' });
+  }
+
+  const parsedStart = parseDate(startAt);
+  const parsedEnd = parseDate(endAt);
+  const numericFieldId = Number(fieldId);
+
+  if (!numericFieldId || !parsedStart || !parsedEnd) {
+    return res.status(400).json({ error: 'Faltan campos requeridos o fechas inválidas.' });
+  }
+
+  if (parsedStart >= parsedEnd) {
+    return res.status(400).json({ error: 'El rango horario es inválido (startAt debe ser menor que endAt).' });
+  }
+
+  // (Opcional) Mínimo 60 minutos
+  const minutes = (parsedEnd.getTime() - parsedStart.getTime()) / 60000;
+  if (minutes < 60) {
+    return res.status(400).json({ error: 'La reserva debe tener una duración mínima de 60 minutos.' });
+  }
 
   try {
+    // Overlap check (mismo field, no canceladas)
+    const conflict = await prisma.booking.findFirst({
+      where: {
+        fieldId: numericFieldId,
+        status: { not: BookingStatus.CANCELLED },
+        startAt: { lt: parsedEnd },
+        endAt: { gt: parsedStart }
+      },
+      select: { id: true, startAt: true, endAt: true, status: true }
+    });
+
+    if (conflict) {
+      return res.status(409).json({
+        error: 'Horario no disponible: se superpone con otra reserva.',
+        conflict
+      });
+    }
+
     const booking = await prisma.booking.create({
       data: {
         userId,
-        fieldId,
-        date: new Date(date),
-        timeSlot,
-        status: 'PENDING'
+        fieldId: numericFieldId,
+        startAt: parsedStart,
+        endAt: parsedEnd,
+        status: BookingStatus.PENDING
       }
     });
+
     res.status(201).json(booking);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error('Error en createBooking:', err);
+    sendError(res, err, { status: 400, message: 'No se pudo crear la reserva.' });
   }
 };
 
 exports.getUserBookings = async (req, res) => {
-  const userId = req.user.id;
+  const userId = req.user && req.user.id;
+  if (!userId) {
+    return res.status(401).json({ error: 'Token missing or invalid' });
+  }
+
   try {
     const bookings = await prisma.booking.findMany({
       where: { userId },
@@ -33,17 +85,30 @@ exports.getUserBookings = async (req, res) => {
           include: { club: true }
         }
       },
-      orderBy: { date: 'desc' }
+      orderBy: { startAt: 'desc' }
     });
+
     res.json(bookings);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error en getUserBookings:', err);
+    sendError(res, err, { status: 500, message: 'No se pudieron obtener las reservas.' });
   }
 };
 
 exports.updateBookingStatus = async (req, res) => {
-  const bookingId = parseInt(req.params.id);
+  const bookingId = Number(req.params.id);
   const { status } = req.body;
+
+  if (!bookingId || !status) {
+    return res.status(400).json({ error: 'Datos inválidos.' });
+  }
+
+  // Validar status contra enum
+  const allowed = new Set(Object.values(BookingStatus));
+  if (!allowed.has(status)) {
+    return res.status(400).json({ error: 'Status inválido.' });
+  }
+
   try {
     const updated = await prisma.booking.update({
       where: { id: bookingId },
@@ -51,6 +116,7 @@ exports.updateBookingStatus = async (req, res) => {
     });
     res.json(updated);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error('Error en updateBookingStatus:', err);
+    sendError(res, err, { status: 400, message: 'No se pudo actualizar la reserva.' });
   }
 };

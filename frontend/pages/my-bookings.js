@@ -1,20 +1,14 @@
 import withAuth from '../components/withAuth';
 import { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
+import { apiFetch } from '../lib/api';
 
 function MyBookings() {
   const [bookings, setBookings] = useState([]);
 
   const fetchBookings = async () => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/bookings/user`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const res = await apiFetch('/bookings/user');
 
       const data = await res.json();
       setBookings(data);
@@ -28,17 +22,11 @@ function MyBookings() {
   }, []);
 
   const handleCancel = async (bookingId) => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
     if (!confirm('¿Estás seguro de cancelar esta reserva?')) return;
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/bookings/${bookingId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const res = await apiFetch(`/bookings/${bookingId}`, {
+        method: 'DELETE'
       });
 
       if (!res.ok) throw new Error('Error al cancelar');

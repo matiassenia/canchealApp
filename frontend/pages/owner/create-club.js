@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
+import { apiFetch } from '../../lib/api';
 
 export default function CreateClub() {
   const [name, setName] = useState('');
@@ -23,11 +24,10 @@ export default function CreateClub() {
     }
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clubs`, {
+      const res = await apiFetch('/clubs', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ name, address, zone, description })
       });

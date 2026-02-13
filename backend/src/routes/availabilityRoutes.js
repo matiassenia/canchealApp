@@ -7,6 +7,7 @@ const availabilityController = require('../controllers/availabilityController');
 const authMiddleware = require('../middlewares/authMiddleware');
 
 router.get('/:id', availabilityController.getAvailability);
+router.get('/:id/slots', availabilityController.getAvailableSlots);
 router.post('/', authMiddleware, availabilityController.setAvailability);
 
 module.exports = router;
