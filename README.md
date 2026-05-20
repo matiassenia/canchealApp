@@ -1,350 +1,234 @@
-# ⚽ Cancheal App
+# CanchealApp
 
-Sistema completo de gestión de reservas de canchas de fútbol.
+Football field booking platform with player discovery flow and owner operations flow.
 
-Backend con arquitectura limpia, autenticación JWT, motor de disponibilidad dinámico y protección contra reservas solapadas.
+## Product Summary
 
----
+CanchealApp helps:
+- **Players** discover clubs, check availability, book slots, and manage reservations.
+- **Club owners** manage clubs/fields, configure weekly availability, and monitor operational KPIs.
 
-## 🚀 Tech Stack
+Current architecture stays intentionally simple: one backend API + one frontend app.
 
-### Backend
-- Node.js
-- Express
-- PostgreSQL
-- Prisma ORM
-- JWT Authentication
+## Architecture
 
-### Frontend
-- Next.js
-
----
-
-## 📌 Arquitectura General
-
-```
-Frontend (Next.js)
-        ↓
-Express API
-        ↓
+```text
+Frontend (Next.js pages router)
+        |
+        v
+Backend API (Express)
+        |
+        v
 Prisma ORM
-        ↓
+        |
+        v
 PostgreSQL
 ```
 
-La API está organizada en:
-- Controllers
-- Routes
-- Middlewares
-- Prisma schema
+- `frontend/`: Next.js UI and booking UX
+- `backend/`: Express routes/controllers, auth, Prisma data access
+- `docker-compose.yml`: local Postgres
 
----
+## Tech Stack
 
-## 🔐 Autenticación
+- **Frontend:** Next.js 15, React 19, Tailwind CSS
+- **Backend:** Node.js, Express 4, Prisma
+- **Database:** PostgreSQL
+- **Auth:** JWT (Bearer token)
 
-Sistema basado en JWT.
+## Core Features
 
-### Endpoints
+- Register / login
+- Explore clubs and profile pages
+- Contextual booking flow (Explore/Club -> Availability)
+- Slot-based availability UI
+- Booking creation with overlap protection
+- Booking cancellation (`DELETE /bookings/:id`, soft cancel)
+- Owner dashboard and club/field/availability management
+- Role-based authorization (`USER`, `OWNER`, `ADMIN`)
 
-```
-POST /auth/register
-POST /auth/login
-```
+## Booking Flow (Player)
 
-### Seguridad implementada
+1. Explore clubs (`/explore`) or clubs list (`/clubs`)
+2. Open club profile (`/clubs/[id]`)
+3. Go to availability (`/availability?clubId=...&fieldId=...`)
+4. Select field + slot
+5. Confirm booking
+6. Track/cancel in `My Bookings` (`/my-bookings`)
 
-- Rutas protegidas con `authMiddleware`
-- Validación de header `Authorization: Bearer <token>`
-- Tokens con expiración
-- Roles: USER / OWNER / ADMIN
+## Owner Flow
 
----
+1. Login as owner
+2. Open owner dashboard (`/owner/dashboard`)
+3. Create/manage clubs
+4. Create fields
+5. Edit weekly availability and save
+6. Use operational cards/sections for daily visibility
 
-## 🏢 Clubs y Canchas
-
-### Clubs
-```
-GET  /clubs
-POST /clubs (protected)
-```
-
-Un club:
-- Tiene owner
-- Tiene múltiples fields
-
-### Fields
-```
-GET  /fields/club/:id
-POST /fields (protected)
-```
-
-Una cancha:
-- Pertenece a un club
-- Tiene disponibilidad semanal
-- Tiene reservas asociadas
-
----
-
-## 📆 Sistema de Reservas (Booking por Rangos)
-
-El modelo Booking utiliza rangos reales de tiempo:
-
-```prisma
-model Booking {
-  id      Int      @id @default(autoincrement())
-  userId  Int
-  fieldId Int
-  startAt DateTime
-  endAt   DateTime
-  status  BookingStatus @default(PENDING)
-}
-```
-
-### Estados
-- PENDING
-- CONFIRMED
-- CANCELLED
-
----
-
-## 🧠 Protección contra solapamientos
-
-Una reserva entra en conflicto si:
-
-```
-existing.startAt < new.endAt
-AND
-existing.endAt > new.startAt
-```
-
-Si hay conflicto:
-```
-HTTP 409 Conflict
-```
-
-Esto evita:
-- Reservas duplicadas
-- Solapamientos parciales
-- Edge cases de inicio/fin iguales
-
----
-
-## 🕓 Motor de Disponibilidad
-
-### Disponibilidad semanal
-
-Modelo:
-
-```prisma
-model Availability {
-  id        Int
-  fieldId   Int
-  weekday   Int     // 0=Domingo ... 6=Sábado
-  startTime String
-  endTime   String
-}
-```
-
-### Generación dinámica de slots
-
-Endpoint:
-
-```
-GET /availability/:fieldId/slots?date=YYYY-MM-DD&slotMinutes=60
-```
-
-El sistema:
-
-1. Obtiene reglas semanales para ese weekday
-2. Genera slots de duración configurable
-3. Resta reservas existentes
-4. Devuelve solo slots disponibles
-
----
-
-## 📡 API Endpoints
+## API Overview
 
 ### Auth
-```
-POST /auth/register
-POST /auth/login
-```
+- `POST /auth/register`
+- `POST /auth/login`
 
 ### Clubs
-```
-GET  /clubs
-POST /clubs (protected)
-```
+- `GET /clubs`
+- `POST /clubs` (auth)
 
 ### Fields
-```
-GET  /fields/club/:id
-POST /fields (protected)
-```
+- `GET /fields`
+- `GET /fields/club/:id`
+- `POST /fields` (auth)
 
 ### Availability
-```
-GET  /availability/:fieldId
-POST /availability (protected)
-GET  /availability/:fieldId/slots?date=YYYY-MM-DD&slotMinutes=60
-```
+- `GET /availability/:id`
+- `GET /availability/:id/slots?date=YYYY-MM-DD&slotMinutes=60`
+- `POST /availability` (auth)
 
 ### Bookings
+- `POST /bookings` (auth)
+- `GET /bookings/user` (auth)
+- `DELETE /bookings/:id` (auth)
+- `PATCH /bookings/:id/status` (auth)
+
+## Demo Credentials
+
+Seed creates these users:
+- `demo.user@cancheal.test` / `demo1234`
+- `demo.owner@cancheal.test` / `demo1234`
+- `demo.admin@cancheal.test` / `demo1234`
+
+## Screenshots (Placeholders)
+
+Add screenshots here before publishing:
+- `docs/screenshots/explore.png`
+- `docs/screenshots/club-profile.png`
+- `docs/screenshots/availability.png`
+- `docs/screenshots/my-bookings.png`
+- `docs/screenshots/owner-dashboard.png`
+
+## Project Structure
+
+```text
+.
+├─ backend/
+│  ├─ index.js
+│  ├─ prisma/
+│  │  ├─ schema.prisma
+│  │  └─ seed.js
+│  └─ src/
+│     ├─ controllers/
+│     ├─ middlewares/
+│     ├─ routes/
+│     └─ utils/
+├─ frontend/
+│  ├─ components/
+│  ├─ lib/
+│  └─ pages/
+└─ docker-compose.yml
 ```
-POST  /bookings (protected)
-GET   /bookings/user (protected)
-DELETE /bookings/:id (protected)
-PATCH /bookings/:id/status (protected)
-```
 
----
+## Environment Variables
 
-## 🛠 Instalación y ejecución local
+### Backend (`backend/.env`)
+- `DATABASE_URL` (required)
+- `JWT_SECRET` (required)
+- `PORT` (optional, default `4000`)
+- `CORS_ORIGINS` (optional, comma-separated; default allows `http://localhost:3000`)
 
-### 1️⃣ Levantar base de datos
+### Frontend (`frontend/.env.local`)
+- `NEXT_PUBLIC_API_URL` (recommended: `http://localhost:4000`)
 
-```
+## Local Setup
+
+### 1) Start database
+
+```bash
 docker compose up -d
 ```
 
----
+### 2) Backend
 
-### 2️⃣ Backend
-
-```
+```bash
 cd backend
 npm install
 npx prisma migrate dev
 npm run dev
 ```
 
-Servidor corre por defecto en:
+### 3) Frontend
 
-```
-http://localhost:4000
-```
-
----
-
-### 3️⃣ Frontend
-
-```
+```bash
 cd frontend
 npm install
 npm run dev
 ```
 
----
+## Seed / Demo Data
 
-## 🎬 Demo setup rápido
-
-### Resetear DB + cargar datos demo
+Reset DB and load realistic demo data:
 
 ```bash
-docker compose up -d
 cd backend
 npx prisma migrate reset --force
 npm run seed
 ```
 
-Usuarios demo:
-- `demo.user@cancheal.test` / `demo1234`
-- `demo.owner@cancheal.test` / `demo1234`
-- `demo.admin@cancheal.test` / `demo1234`
+Seed includes:
+- 6 clubs in different zones
+- multiple fields per club (5/7/11)
+- varied weekly availability
+- sample bookings with `PENDING`, `CONFIRMED`, `CANCELLED`
 
-Datos incluidos por seed:
-- 6 clubes en distintas zonas
-- 2 canchas por club (tipos 5/7/11 combinados)
-- disponibilidad semanal variada por cancha
-- reservas de ejemplo en estado `PENDING`, `CONFIRMED`, `CANCELLED`
+## Manual QA Checklist
 
-### Levantar app para demo
+- **Player flow:** login -> explore -> club profile -> availability -> book
+- **Booking reliability:** confirm booking, verify success feedback
+- **Cancellation flow:** cancel from `my-bookings`, verify `CANCELLED` badge
+- **Owner flow:** login owner -> dashboard -> create field -> save availability
+- **Availability management:** switch fields and verify loaded weekly slots
+
+## Deployment Notes
+
+### Frontend (Vercel)
+- Root directory: `frontend`
+- Build command: `npm run build`
+- Required env: `NEXT_PUBLIC_API_URL=<your-backend-url>`
+
+### Backend (Railway or Render)
+- Root directory: `backend`
+- Start command: `npm run dev` (or `node index.js`)
+- Required env: `DATABASE_URL`, `JWT_SECRET`, optional `CORS_ORIGINS`, `PORT`
+
+### PostgreSQL (Neon or Supabase)
+- Create Postgres instance
+- Copy connection string to `DATABASE_URL`
+- Run Prisma migrations from backend:
 
 ```bash
-# backend
 cd backend
-npm run dev
-
-# frontend (otra terminal)
-cd frontend
-npm run dev
+npx prisma migrate deploy
 ```
 
----
+## Production Build Readiness (Current Status)
 
-## ✅ Checklist manual QA (demo)
+- **Backend:** basic syntax checks pass.
+- **Frontend:** `npm run build` currently fails due lint/type issues in some existing pages/components.
 
-- **Player flow:** login con `demo.user`, explorar clubes, abrir perfil, ir a disponibilidad.
-- **Booking flow:** seleccionar cancha + horario y confirmar reserva desde `availability`.
-- **Cancellation flow:** ir a `Mis Reservas`, cancelar una reserva, verificar badge `CANCELLED`.
-- **Owner flow:** login con `demo.owner`, crear cancha, editar y guardar disponibilidad.
-- **Owner operational view:** revisar KPIs/estados en panel de owner y lista de clubes.
+Before public deploy, fix frontend build blockers flagged by Next.js lint/type check.
 
----
+## Likely Deployment Risks
 
-## 🧪 Testing Manual con cURL
+- Frontend build blockers (lint/parser issues) prevent successful production build.
+- Missing/incorrect `NEXT_PUBLIC_API_URL` causes API calls to wrong origin.
+- Missing `CORS_ORIGINS` in backend may block frontend requests in hosted envs.
+- Weak or leaked JWT secrets in non-local environments.
+- Timezone assumptions in booking display/selection can cause confusion across regions.
 
-### Crear reserva
+## Future Improvements (Scoped, Realistic)
 
-```
-curl -X POST http://localhost:4000/bookings \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <TOKEN>" \
-  -d '{"fieldId":1,"startAt":"2026-02-13T19:00:00-03:00","endAt":"2026-02-13T20:00:00-03:00"}'
-```
-
-### Obtener slots disponibles
-
-```
-curl "http://localhost:4000/availability/1/slots?date=2026-02-13&slotMinutes=60"
-```
-
----
-
-## ⚙️ Consideraciones Técnicas
-
-- Base de datos guarda fechas en UTC
-- Conversión manual a zona horaria Argentina (-03:00)
-- Slot generator configurable por duración
-- Middleware centralizado para protección
-- Prisma migrations sincronizadas
-
----
-
-## 🛡 Seguridad
-
-- JWT obligatorio para crear reservas
-- Validación estricta de headers
-- Overlap validation evita doble booking
-- Manejo de errores estandarizado
-
----
-
-## 📈 Próximos pasos
-
-- Mejorar manejo de timezones con Luxon
-- Agregar índices en Booking para performance
-- Panel de gestión para OWNER
-- Dashboard de reservas
-- Integración con pagos
-- Tests automatizados
-- Rate limiting
-
----
-
-## 📌 Estado actual del proyecto
-
-✔ Autenticación funcional  
-✔ Sistema de roles  
-✔ Creación de clubes y canchas  
-✔ Reservas por rango horario  
-✔ Protección contra solapamientos  
-✔ Generación dinámica de slots  
-✔ Middleware seguro  
-✔ Prisma migrado correctamente  
-
----
-
-## 🎯 Objetivo del Proyecto
-
-Construir una base sólida para una app real de reservas de canchas, escalable y lista para evolucionar hacia producción.
+- Add backend automated tests for auth/booking/availability paths.
+- Add frontend e2e smoke tests for booking and cancellation.
+- Improve timezone handling UX and formatting consistency.
+- Add screenshots and short demo video for portfolio presentation.
+- Add lightweight CI checks for `npm run build` and Prisma migration validation.
