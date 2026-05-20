@@ -5,6 +5,7 @@ const router = express.Router();
 const fieldController = require('../controllers/fieldController');
 const authMiddleware = require('../middlewares/authMiddleware');
 
+router.get('/', fieldController.getFields);
 router.get('/club/:id', fieldController.getFieldsByClub);
 router.post('/', authMiddleware, fieldController.createField);
 

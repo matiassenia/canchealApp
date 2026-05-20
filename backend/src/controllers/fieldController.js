@@ -4,6 +4,18 @@ const { PrismaClient } = require('@prisma/client');
 const { sendError } = require('../utils/errorResponse');
 const prisma = new PrismaClient();
 
+exports.getFields = async (req, res) => {
+  try {
+    const fields = await prisma.field.findMany({
+      include: { availability: true }
+    });
+    res.json(fields);
+  } catch (err) {
+    console.error('Error en getFields:', err);
+    sendError(res, err, { status: 500, message: 'No se pudieron obtener las canchas.' });
+  }
+};
+
 exports.getFieldsByClub = async (req, res) => {
   const clubId = parseInt(req.params.id);
   if (Number.isNaN(clubId)) {
