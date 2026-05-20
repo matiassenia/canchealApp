@@ -7,6 +7,7 @@ export default function Navbar() {
     <nav className="bg-blue-600 text-white p-4 flex justify-between items-center">
       <Link href="/clubs" className="font-bold">CanchealApp</Link>
       <div className="space-x-4">
+        <Link href="/explore" className="hover:underline">Explorar</Link>
         <Link href="/my-bookings" className="hover:underline">Mis reservas</Link>
         <Link href="/logout" className="hover:underline">Cerrar sesión</Link>
       </div>
