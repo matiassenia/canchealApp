@@ -120,3 +120,42 @@ exports.updateBookingStatus = async (req, res) => {
     sendError(res, err, { status: 400, message: 'No se pudo actualizar la reserva.' });
   }
 };
+
+exports.cancelBooking = async (req, res) => {
+  const bookingId = Number(req.params.id);
+  const userId = req.user && req.user.id;
+  const role = req.user && req.user.role;
+
+  if (!userId) {
+    return res.status(401).json({ error: 'Token missing or invalid' });
+  }
+
+  if (!bookingId) {
+    return res.status(400).json({ error: 'Datos inválidos.' });
+  }
+
+  try {
+    const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
+
+    if (!booking) {
+      return res.status(404).json({ error: 'Reserva no encontrada.' });
+    }
+
+    const isOwner = booking.userId === userId;
+    const isAdmin = role === 'ADMIN';
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ error: 'No tienes permisos para cancelar esta reserva.' });
+    }
+
+    const cancelled = await prisma.booking.update({
+      where: { id: bookingId },
+      data: { status: BookingStatus.CANCELLED }
+    });
+
+    res.json(cancelled);
+  } catch (err) {
+    console.error('Error en cancelBooking:', err);
+    sendError(res, err, { status: 400, message: 'No se pudo cancelar la reserva.' });
+  }
+};
