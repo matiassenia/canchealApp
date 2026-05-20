@@ -267,6 +267,7 @@ export default function ClubDashboard() {
             ))}
           </div>
         </section>
-        </div>
+      </div>
+    </div>
   );
 }

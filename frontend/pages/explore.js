@@ -24,7 +24,7 @@ function ExplorePage() {
         const data = await res.json();
         const parsed = Array.isArray(data) ? data.map(enrichClubForDiscovery) : [];
         setClubs(parsed);
-      } catch (err) {
+      } catch {
         setError('No se pudieron cargar los clubes.');
       } finally {
         setLoading(false);

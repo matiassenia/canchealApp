@@ -41,7 +41,7 @@ function ClubProfilePage() {
         }
 
         setClub(found);
-      } catch (err) {
+      } catch {
         setError('No se pudo cargar el club.');
         setClub(null);
       } finally {

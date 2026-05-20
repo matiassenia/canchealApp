@@ -49,7 +49,7 @@ export default function AddFieldPage() {
       setImageUrl('');
       setError(null);
 
-    } catch (jsonErr) {
+    } catch {
       console.error('❌ La respuesta no es JSON válido:', text);
       setError('Respuesta inesperada del servidor (no es JSON válido)');
     }

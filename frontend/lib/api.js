@@ -12,7 +12,10 @@ const apiFetch = (path, options = {}) => {
     ...(options.headers || {}),
   };
 
-  return fetch(`${API_URL}${path}`, { ...options, headers });
+  const base = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+
+  return fetch(`${base}${cleanPath}`, { ...options, headers });
 };
 
 export { apiFetch };

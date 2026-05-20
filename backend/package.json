@@ -12,6 +12,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "node index.js",
+    "start": "node index.js",
     "db:up": "docker compose -f ../docker-compose.yml up -d",
     "db:down": "docker compose -f ../docker-compose.yml down",
     "prisma:generate": "prisma generate",
