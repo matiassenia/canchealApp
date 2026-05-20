@@ -98,6 +98,8 @@ exports.getUserBookings = async (req, res) => {
 exports.updateBookingStatus = async (req, res) => {
   const bookingId = Number(req.params.id);
   const { status } = req.body;
+  const userId = req.user && req.user.id;
+  const role = req.user && req.user.role;
 
   if (!bookingId || !status) {
     return res.status(400).json({ error: 'Datos inválidos.' });
@@ -110,6 +112,19 @@ exports.updateBookingStatus = async (req, res) => {
   }
 
   try {
+    const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
+
+    if (!booking) {
+      return res.status(404).json({ error: 'Reserva no encontrada.' });
+    }
+
+    const isOwner = booking.userId === userId;
+    const isAdmin = role === 'ADMIN';
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ error: 'No tienes permisos para actualizar esta reserva.' });
+    }
+
     const updated = await prisma.booking.update({
       where: { id: bookingId },
       data: { status }
