@@ -3,6 +3,27 @@ const { PrismaClient, BookingStatus } = require('@prisma/client');
 const { sendError } = require('../utils/errorResponse');
 const prisma = new PrismaClient();
 
+const ISO_DATE_TIME_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?(?:Z|[+-]\d{2}:\d{2})$/;
+
+function badRequest(res, message) {
+  return res.status(400).json({ error: message });
+}
+
+function parsePositiveInt(value) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) return null;
+  return parsed;
+}
+
+function isIsoDateTime(value) {
+  return typeof value === 'string' && ISO_DATE_TIME_REGEX.test(value);
+}
+
+function validateBookingStatus(status) {
+  const allowed = new Set(Object.values(BookingStatus));
+  return allowed.has(status);
+}
+
 function parseDate(value) {
   const d = new Date(value);
   if (!value || Number.isNaN(d.getTime())) return null;
@@ -17,22 +38,31 @@ exports.createBooking = async (req, res) => {
     return res.status(401).json({ error: 'Token missing or invalid' });
   }
 
+  const numericFieldId = parsePositiveInt(fieldId);
+
+  if (!numericFieldId) {
+    return badRequest(res, 'fieldId inválido.');
+  }
+
+  if (!isIsoDateTime(startAt) || !isIsoDateTime(endAt)) {
+    return badRequest(res, 'startAt y endAt deben tener formato ISO 8601 válido.');
+  }
+
   const parsedStart = parseDate(startAt);
   const parsedEnd = parseDate(endAt);
-  const numericFieldId = Number(fieldId);
 
-  if (!numericFieldId || !parsedStart || !parsedEnd) {
-    return res.status(400).json({ error: 'Faltan campos requeridos o fechas inválidas.' });
+  if (!parsedStart || !parsedEnd) {
+    return badRequest(res, 'Fechas inválidas.');
   }
 
   if (parsedStart >= parsedEnd) {
-    return res.status(400).json({ error: 'El rango horario es inválido (startAt debe ser menor que endAt).' });
+    return badRequest(res, 'El rango horario es inválido (startAt debe ser menor que endAt).');
   }
 
   // (Opcional) Mínimo 60 minutos
   const minutes = (parsedEnd.getTime() - parsedStart.getTime()) / 60000;
   if (minutes < 60) {
-    return res.status(400).json({ error: 'La reserva debe tener una duración mínima de 60 minutos.' });
+    return badRequest(res, 'La reserva debe tener una duración mínima de 60 minutos.');
   }
 
   try {
@@ -96,19 +126,17 @@ exports.getUserBookings = async (req, res) => {
 };
 
 exports.updateBookingStatus = async (req, res) => {
-  const bookingId = Number(req.params.id);
+  const bookingId = parsePositiveInt(req.params.id);
   const { status } = req.body;
   const userId = req.user && req.user.id;
   const role = req.user && req.user.role;
 
   if (!bookingId || !status) {
-    return res.status(400).json({ error: 'Datos inválidos.' });
+    return badRequest(res, 'Datos inválidos.');
   }
 
-  // Validar status contra enum
-  const allowed = new Set(Object.values(BookingStatus));
-  if (!allowed.has(status)) {
-    return res.status(400).json({ error: 'Status inválido.' });
+  if (!validateBookingStatus(status)) {
+    return badRequest(res, 'Status inválido.');
   }
 
   try {
@@ -137,7 +165,7 @@ exports.updateBookingStatus = async (req, res) => {
 };
 
 exports.cancelBooking = async (req, res) => {
-  const bookingId = Number(req.params.id);
+  const bookingId = parsePositiveInt(req.params.id);
   const userId = req.user && req.user.id;
   const role = req.user && req.user.role;
 
@@ -146,7 +174,7 @@ exports.cancelBooking = async (req, res) => {
   }
 
   if (!bookingId) {
-    return res.status(400).json({ error: 'Datos inválidos.' });
+    return badRequest(res, 'Datos inválidos.');
   }
 
   try {
