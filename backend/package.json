@@ -16,6 +16,7 @@
     "db:down": "docker compose -f ../docker-compose.yml down",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "seed": "node prisma/seed.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

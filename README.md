@@ -193,6 +193,7 @@ GET  /availability/:fieldId/slots?date=YYYY-MM-DD&slotMinutes=60
 ```
 POST  /bookings (protected)
 GET   /bookings/user (protected)
+DELETE /bookings/:id (protected)
 PATCH /bookings/:id/status (protected)
 ```
 
@@ -214,7 +215,7 @@ docker compose up -d
 cd backend
 npm install
 npx prisma migrate dev
-node index.js
+npm run dev
 ```
 
 Servidor corre por defecto en:
@@ -232,6 +233,52 @@ cd frontend
 npm install
 npm run dev
 ```
+
+---
+
+## 🎬 Demo setup rápido
+
+### Resetear DB + cargar datos demo
+
+```bash
+docker compose up -d
+cd backend
+npx prisma migrate reset --force
+npm run seed
+```
+
+Usuarios demo:
+- `demo.user@cancheal.test` / `demo1234`
+- `demo.owner@cancheal.test` / `demo1234`
+- `demo.admin@cancheal.test` / `demo1234`
+
+Datos incluidos por seed:
+- 6 clubes en distintas zonas
+- 2 canchas por club (tipos 5/7/11 combinados)
+- disponibilidad semanal variada por cancha
+- reservas de ejemplo en estado `PENDING`, `CONFIRMED`, `CANCELLED`
+
+### Levantar app para demo
+
+```bash
+# backend
+cd backend
+npm run dev
+
+# frontend (otra terminal)
+cd frontend
+npm run dev
+```
+
+---
+
+## ✅ Checklist manual QA (demo)
+
+- **Player flow:** login con `demo.user`, explorar clubes, abrir perfil, ir a disponibilidad.
+- **Booking flow:** seleccionar cancha + horario y confirmar reserva desde `availability`.
+- **Cancellation flow:** ir a `Mis Reservas`, cancelar una reserva, verificar badge `CANCELLED`.
+- **Owner flow:** login con `demo.owner`, crear cancha, editar y guardar disponibilidad.
+- **Owner operational view:** revisar KPIs/estados en panel de owner y lista de clubes.
 
 ---
 
