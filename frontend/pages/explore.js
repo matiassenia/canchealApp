@@ -54,15 +54,15 @@ function ExplorePage() {
     <div className="min-h-screen bg-slate-100">
       <Navbar />
 
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
         <header className="mb-6">
-          <h1 className="text-3xl font-extrabold text-slate-900 sm:text-4xl">Explorar clubes</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Explorar clubes</h1>
           <p className="mt-2 text-sm text-slate-600 sm:text-base">
             Descubri canchas por zona, tipo y servicios. Reserva rapido desde un solo lugar.
           </p>
         </header>
 
-        <section className="mb-6 rounded-2xl bg-white p-4 shadow sm:p-5">
+        <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
             <input
               type="text"
@@ -109,7 +109,7 @@ function ExplorePage() {
         {loading ? (
           <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3, 4, 5, 6].map((item) => (
-              <div key={item} className="overflow-hidden rounded-2xl bg-white shadow">
+              <div key={item} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <div className="h-32 animate-pulse bg-slate-200" />
                 <div className="space-y-3 p-4">
                   <div className="h-4 w-2/3 animate-pulse rounded bg-slate-200" />
@@ -120,12 +120,12 @@ function ExplorePage() {
             ))}
           </section>
         ) : error ? (
-          <section className="rounded-2xl bg-white p-8 text-center shadow">
+          <section className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
             <p className="font-semibold text-red-600">{error}</p>
             <p className="mt-2 text-sm text-slate-600">Intenta nuevamente en unos segundos.</p>
           </section>
         ) : filteredClubs.length === 0 ? (
-          <section className="rounded-2xl bg-white p-8 text-center shadow">
+          <section className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
             <p className="font-semibold text-slate-900">No encontramos clubes con esos filtros.</p>
             <p className="mt-2 text-sm text-slate-600">Prueba con otra zona o borra algunos filtros.</p>
           </section>

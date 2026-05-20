@@ -55,8 +55,10 @@ function ClubProfilePage() {
     return (
       <div className="min-h-screen bg-slate-100">
         <Navbar />
-        <div className="mx-auto max-w-5xl px-4 py-8">
-          <p className="text-slate-600">Cargando perfil del club...</p>
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p className="text-sm text-slate-600">Cargando perfil del club...</p>
+          </div>
         </div>
       </div>
     );
@@ -66,9 +68,9 @@ function ClubProfilePage() {
     return (
       <div className="min-h-screen bg-slate-100">
         <Navbar />
-        <div className="mx-auto max-w-5xl px-4 py-8">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
           <p className="mb-4 text-red-600">{error || 'Club no encontrado.'}</p>
-          <Link href="/clubs" className="inline-block rounded-lg bg-slate-900 px-4 py-2 text-white">
+          <Link href="/clubs" className="inline-block rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">
             Volver a clubes
           </Link>
         </div>
@@ -80,12 +82,12 @@ function ClubProfilePage() {
     <div className="min-h-screen bg-slate-100">
       <Navbar />
 
-      <div className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
         <Link href="/clubs" className="mb-4 inline-block text-sm font-medium text-blue-700 hover:underline">
           {'<- Volver a clubes'}
         </Link>
 
-        <section className="overflow-hidden rounded-2xl bg-white shadow-lg">
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="h-44 w-full bg-gradient-to-r from-emerald-600 via-green-600 to-lime-600 sm:h-56" />
           <div className="p-5 sm:p-6">
             <p className="mb-2 inline-block rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
@@ -97,7 +99,7 @@ function ClubProfilePage() {
           </div>
         </section>
 
-        <section className="mt-6 rounded-2xl bg-white p-5 shadow sm:p-6">
+        <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <h2 className="text-lg font-bold text-slate-900">Servicios</h2>
           <div className="mt-3 flex flex-wrap gap-2">
             {AMENITIES_PLACEHOLDER.map((amenity) => (
@@ -108,7 +110,7 @@ function ClubProfilePage() {
           </div>
         </section>
 
-        <section className="mt-6 rounded-2xl bg-white p-5 shadow sm:p-6">
+        <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-bold text-slate-900">Canchas</h2>
             <span className="text-sm text-slate-500">{club.fields?.length || 0} disponibles</span>
@@ -119,14 +121,14 @@ function ClubProfilePage() {
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {club.fields.map((field) => (
-                <article key={field.id} className="rounded-xl border border-slate-200 p-4">
+                <article key={field.id} className="rounded-xl border border-slate-200 p-4 shadow-sm">
                   <h3 className="text-base font-bold text-slate-900">{field.name}</h3>
                   <p className="mt-1 text-sm text-slate-600">Tipo: Futbol {field.type}</p>
                   <p className="mt-1 text-sm font-semibold text-emerald-700">Desde $12.000 / hora</p>
 
                   <button
                     onClick={() => router.push(`/availability?fieldId=${field.id}&clubId=${club.id}`)}
-                    className="mt-3 w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+                    className="mt-3 w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
                   >
                     Reservar cancha
                   </button>

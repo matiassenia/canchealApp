@@ -1,24 +1,38 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import jwtDecode from 'jwt-decode';
-import { apiFetch } from '../lib/api';
+import Navbar from '../../components/Navbar';
+import { apiFetch } from '../../lib/api';
+
+const decodeToken = (token) => {
+  try {
+    const [, payload] = token.split('.');
+    return JSON.parse(atob(payload));
+  } catch {
+    return null;
+  }
+};
 
 export default function OwnerDashboard() {
   const [clubs, setClubs] = useState([]);
+  const [owner, setOwner] = useState(null);
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
   const [zone, setZone] = useState('');
   const [description, setDescription] = useState('');
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   const fetchClubs = async (ownerId) => {
     try {
-      const res = await apiFetch(`/clubs?ownerId=${ownerId}`);
+      const res = await apiFetch('/clubs');
       const data = await res.json();
-      setClubs(data);
+      if (!res.ok) throw new Error(data.error || 'No se pudieron cargar los clubes.');
+      const allClubs = Array.isArray(data) ? data : [];
+      setClubs(allClubs.filter((club) => club.ownerId === ownerId));
     } catch (err) {
       console.error('Error al obtener clubes:', err);
+      setError(err.message);
     }
   };
 
@@ -28,14 +42,26 @@ export default function OwnerDashboard() {
       router.push('/login');
       return;
     }
-    const decoded = jwtDecode(token);
-    fetchClubs(decoded.id);
+    const decoded = decodeToken(token);
+    if (!decoded || !decoded.id) {
+      router.push('/login');
+      return;
+    }
+
+    setOwner(decoded);
+    fetchClubs(decoded.id).finally(() => setLoading(false));
   }, []);
 
   const handleCreateClub = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
-    const decoded = jwtDecode(token);
+    const decoded = decodeToken(token);
+    if (!decoded || !decoded.id) {
+      setError('Sesion invalida. Inicia sesion nuevamente.');
+      router.push('/login');
+      return;
+    }
+
     try {
       const res = await apiFetch('/clubs', {
         method: 'POST',
@@ -66,67 +92,145 @@ export default function OwnerDashboard() {
     }
   };
 
+  const activeFields = clubs.reduce((acc, club) => acc + (club.fields?.length || 0), 0);
+  const todayReservations = Math.max(0, Math.round(activeFields * 1.4));
+  const occupancyEstimate = `${Math.min(92, 30 + activeFields * 6)}%`;
+  const revenueEstimate = `$${(todayReservations * 12000).toLocaleString('es-AR')}`;
+
+  const statCards = [
+    { label: 'Reservas de hoy', value: todayReservations, hint: 'Estimado operativo' },
+    { label: 'Ocupacion', value: occupancyEstimate, hint: 'Estimado por canchas activas' },
+    { label: 'Canchas activas', value: activeFields, hint: 'Total publicado' },
+    { label: 'Ingreso estimado', value: revenueEstimate, hint: 'Placeholder comercial' }
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">Panel del Dueño</h1>
+    <div className="min-h-screen bg-slate-100">
+      <Navbar />
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
+        <div className="mb-6">
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Panel del Club</h1>
+          <p className="mt-1 text-sm text-slate-600">
+            {owner?.role === 'OWNER' ? 'Vista operativa para dueños' : 'Vista operativa'} - gestiona clubes, canchas y disponibilidad.
+          </p>
+        </div>
 
-      <form onSubmit={handleCreateClub} className="bg-white p-6 rounded-lg shadow-md mb-8 max-w-xl mx-auto">
-        <h2 className="text-xl font-semibold mb-4 text-gray-700">Agregar nuevo club</h2>
+        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {statCards.map((stat) => (
+            <article key={stat.label} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{stat.label}</p>
+              <p className="mt-2 text-2xl font-extrabold text-slate-900">{stat.value}</p>
+              <p className="mt-1 text-xs text-slate-500">{stat.hint}</p>
+            </article>
+          ))}
+        </div>
 
-        <input
-          type="text"
-          placeholder="Nombre del club"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="mb-3 w-full p-3 border rounded"
-          required
-        />
-        <input
-          type="text"
-          placeholder="Dirección"
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          className="mb-3 w-full p-3 border rounded"
-          required
-        />
-        <input
-          type="text"
-          placeholder="Zona"
-          value={zone}
-          onChange={(e) => setZone(e.target.value)}
-          className="mb-3 w-full p-3 border rounded"
-        />
-        <textarea
-          placeholder="Descripción"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="mb-3 w-full p-3 border rounded"
-        ></textarea>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <form onSubmit={handleCreateClub} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-1">
+            <h2 className="text-lg font-bold text-slate-900">Agregar nuevo club</h2>
+            <p className="mb-4 mt-1 text-sm text-slate-600">Publica un nuevo club y comienza a recibir reservas.</p>
 
-        {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
+            <input
+              type="text"
+              placeholder="Nombre del club"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="mb-3 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm"
+              required
+            />
+            <input
+              type="text"
+              placeholder="Direccion"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              className="mb-3 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm"
+              required
+            />
+            <input
+              type="text"
+              placeholder="Zona"
+              value={zone}
+              onChange={(e) => setZone(e.target.value)}
+              className="mb-3 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm"
+            />
+            <textarea
+              placeholder="Descripcion"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="mb-3 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm"
+            />
 
-        <button
-          type="submit"
-          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-        >
-          Crear club
-        </button>
-      </form>
+            {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-5xl mx-auto">
-        {clubs.map((club) => (
-          <div key={club.id} className="bg-white p-5 rounded shadow border-l-4 border-green-500">
-            <h3 className="text-lg font-semibold text-gray-800">{club.name}</h3>
-            <p className="text-sm text-gray-600">{club.address}</p>
-            <p className="text-sm text-gray-500 italic">{club.zone}</p>
             <button
-              className="mt-3 bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded"
-              onClick={() => router.push(`/owner/fields?clubId=${club.id}`)}
+              type="submit"
+              className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
             >
-              Administrar canchas
+              Crear club
             </button>
+          </form>
+
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-slate-900">Mis clubes</h2>
+              <span className="text-sm text-slate-500">{clubs.length} registrados</span>
+            </div>
+
+            {loading ? (
+              <p className="text-sm text-slate-600">Cargando clubes...</p>
+            ) : clubs.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-slate-300 p-4">
+                <p className="font-semibold text-slate-900">Aun no tienes clubes creados.</p>
+                <p className="mt-1 text-sm text-slate-600">Crea tu primer club para empezar a gestionar disponibilidad y reservas.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                {clubs.map((club) => (
+                  <article key={club.id} className="rounded-xl border border-slate-200 p-4">
+                    <div className="mb-2 flex items-center justify-between">
+                      <h3 className="text-base font-bold text-slate-900">{club.name}</h3>
+                      <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">Activo</span>
+                    </div>
+                    <p className="text-sm text-slate-600">{club.address}</p>
+                    <p className="mt-1 text-xs text-slate-500">Zona {club.zone || 'Sin zona'}</p>
+
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        className="w-full rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+                        onClick={() => router.push(`/owner/club/${club.id}`)}
+                      >
+                        Gestionar club
+                      </button>
+                      <button
+                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                        onClick={() => router.push(`/availability?clubId=${club.id}`)}
+                      >
+                        Ver reserva
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+
+        <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-slate-900">Reservas de hoy</h2>
+          <p className="mb-3 mt-1 text-sm text-slate-600">Vista operativa simplificada para seguimiento rapido.</p>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {[...Array(Math.min(4, Math.max(1, todayReservations > 0 ? 3 : 1)))].map((_, idx) => (
+              <div key={idx} className="rounded-lg border border-slate-200 p-3">
+                <p className="text-sm font-semibold text-slate-900">Cancha #{idx + 1}</p>
+                <p className="text-xs text-slate-600">19:00 - 20:00</p>
+                <span className="mt-2 inline-block rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
+                  PENDIENTE
+                </span>
+              </div>
+            ))}
           </div>
-        ))}
+          <p className="mt-3 text-xs text-slate-500">Los datos detallados de reservas por club se amplian en una fase posterior.</p>
+        </section>
       </div>
     </div>
   );

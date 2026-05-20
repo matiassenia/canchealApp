@@ -41,7 +41,7 @@ export default function ClubDiscoveryCard({ club }) {
   const router = useRouter();
 
   return (
-    <article className="overflow-hidden rounded-2xl bg-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg">
+    <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
       <div className="h-32 bg-gradient-to-r from-emerald-600 via-green-600 to-lime-500" />
       <div className="p-5">
         <div className="mb-2 flex items-center justify-between gap-2">
@@ -81,14 +81,14 @@ export default function ClubDiscoveryCard({ club }) {
         <div className="mt-4 grid grid-cols-2 gap-2">
           <Link
             href={`/clubs/${club.id}`}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-center text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-center text-sm font-semibold text-slate-700 hover:bg-slate-50"
           >
             Ver perfil
           </Link>
           <button
             type="button"
             onClick={() => router.push(`/availability?clubId=${club.id}`)}
-            className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+            className="rounded-lg bg-slate-900 px-3 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
           >
             Reservar
           </button>
