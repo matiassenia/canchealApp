@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Navbar from '../../components/Navbar';
 import { apiFetch } from '../../lib/api';
+import ui from '../../lib/ui';
 
 const decodeToken = (token) => {
   try {
@@ -105,19 +106,20 @@ export default function OwnerDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className={`${ui.page} ${ui.pageGradient}`}>
       <Navbar />
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
+      <div className={ui.container}>
         <div className="mb-6">
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Panel del Club</h1>
-          <p className="mt-1 text-sm text-slate-600">
+          <span className={ui.badgeWarn}>Panel operativo</span>
+          <h1 className={ui.title}>Panel del Club</h1>
+          <p className={ui.subtitle}>
             {owner?.role === 'OWNER' ? 'Vista operativa para dueños' : 'Vista operativa'} - gestiona clubes, canchas y disponibilidad.
           </p>
         </div>
 
         <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {statCards.map((stat) => (
-            <article key={stat.label} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <article key={stat.label} className={`${ui.card} p-4`}>
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{stat.label}</p>
               <p className="mt-2 text-2xl font-extrabold text-slate-900">{stat.value}</p>
               <p className="mt-1 text-xs text-slate-500">{stat.hint}</p>
@@ -126,7 +128,7 @@ export default function OwnerDashboard() {
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <form onSubmit={handleCreateClub} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-1">
+          <form onSubmit={handleCreateClub} className={`${ui.card} p-6 lg:col-span-1`}>
             <h2 className="text-lg font-bold text-slate-900">Agregar nuevo club</h2>
             <p className="mb-4 mt-1 text-sm text-slate-600">Publica un nuevo club y comienza a recibir reservas.</p>
 
@@ -135,7 +137,7 @@ export default function OwnerDashboard() {
               placeholder="Nombre del club"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="mb-3 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm"
+              className={`${ui.input} mb-3`}
               required
             />
             <input
@@ -143,7 +145,7 @@ export default function OwnerDashboard() {
               placeholder="Direccion"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              className="mb-3 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm"
+              className={`${ui.input} mb-3`}
               required
             />
             <input
@@ -151,26 +153,26 @@ export default function OwnerDashboard() {
               placeholder="Zona"
               value={zone}
               onChange={(e) => setZone(e.target.value)}
-              className="mb-3 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm"
+              className={`${ui.input} mb-3`}
             />
             <textarea
               placeholder="Descripcion"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="mb-3 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm"
+              className={`${ui.input} mb-3`}
             />
 
             {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
 
             <button
               type="submit"
-              className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
+              className={`w-full ${ui.buttonPrimary}`}
             >
               Crear club
             </button>
           </form>
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
+          <section className={`${ui.card} p-6 lg:col-span-2`}>
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-900">Mis clubes</h2>
               <span className="text-sm text-slate-500">{clubs.length} registrados</span>
@@ -189,20 +191,20 @@ export default function OwnerDashboard() {
                   <article key={club.id} className="rounded-xl border border-slate-200 p-4">
                     <div className="mb-2 flex items-center justify-between">
                       <h3 className="text-base font-bold text-slate-900">{club.name}</h3>
-                      <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">Activo</span>
+                      <span className={ui.badgeSuccess}>Activo</span>
                     </div>
                     <p className="text-sm text-slate-600">{club.address}</p>
                     <p className="mt-1 text-xs text-slate-500">Zona {club.zone || 'Sin zona'}</p>
 
                     <div className="mt-3 flex gap-2">
                       <button
-                        className="w-full rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+                        className={`w-full ${ui.buttonPrimary}`}
                         onClick={() => router.push(`/owner/club/${club.id}`)}
                       >
                         Gestionar club
                       </button>
                       <button
-                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                        className={`w-full ${ui.buttonSecondary}`}
                         onClick={() => router.push(`/availability?clubId=${club.id}`)}
                       >
                         Ver reserva
@@ -215,7 +217,7 @@ export default function OwnerDashboard() {
           </section>
         </div>
 
-        <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className={`mt-6 ${ui.card} p-6`}>
           <h2 className="text-lg font-bold text-slate-900">Reservas de hoy</h2>
           <p className="mb-3 mt-1 text-sm text-slate-600">Vista operativa simplificada para seguimiento rapido.</p>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">

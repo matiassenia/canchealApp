@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import ui from '../lib/ui';
 
 const AMENITIES_POOL = ['Iluminacion', 'Vestuarios', 'Estacionamiento', 'Buffet', 'Duchas'];
 
@@ -41,11 +42,11 @@ export default function ClubDiscoveryCard({ club }) {
   const router = useRouter();
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+    <article className={`overflow-hidden ${ui.card} ${ui.cardHover}`}>
       <div className="h-32 bg-gradient-to-r from-emerald-600 via-green-600 to-lime-500" />
       <div className="p-5">
         <div className="mb-2 flex items-center justify-between gap-2">
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+          <span className={ui.badge}>
             Zona {club.zone || 'Sin zona'}
           </span>
           <span className="text-xs font-bold text-amber-600">{club.discoveryRating} ★</span>
@@ -70,7 +71,7 @@ export default function ClubDiscoveryCard({ club }) {
 
         <div className="mt-3 flex flex-wrap gap-1.5">
           {club.discoveryAmenities.map((amenity) => (
-            <span key={`${club.id}-${amenity}`} className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+            <span key={`${club.id}-${amenity}`} className={ui.badgeSuccess}>
               {amenity}
             </span>
           ))}
@@ -81,14 +82,14 @@ export default function ClubDiscoveryCard({ club }) {
         <div className="mt-4 grid grid-cols-2 gap-2">
           <Link
             href={`/clubs/${club.id}`}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-center text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            className={`${ui.buttonSecondary} text-center`}
           >
             Ver perfil
           </Link>
           <button
             type="button"
             onClick={() => router.push(`/availability?clubId=${club.id}`)}
-            className="rounded-lg bg-slate-900 px-3 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
+            className={ui.buttonPrimary}
           >
             Reservar
           </button>

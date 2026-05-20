@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Navbar from '../components/Navbar';
 import { apiFetch } from '../lib/api';
+import ui from '../lib/ui';
 
 const WEEKDAY_LABELS = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
 const SLOT_START_HOUR = 8;
@@ -217,9 +218,9 @@ export default function Availability() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className={`${ui.page} ${ui.pageGradient}`}>
       <Navbar />
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
+      <div className={ui.container}>
         <div className="mb-3 text-xs font-semibold text-slate-500">
           <Link href="/explore" className="hover:underline">Explorar</Link>
           <span className="mx-1">-&gt;</span>
@@ -232,11 +233,12 @@ export default function Availability() {
           <span className="text-slate-700">Reserva</span>
         </div>
 
-        <h1 className="text-2xl font-bold mb-1 text-slate-900">Disponibilidad de Canchas</h1>
+        <span className={ui.badgeSuccess}>Paso final de reserva</span>
+        <h1 className="mb-1 text-2xl font-bold text-slate-900">Disponibilidad de Canchas</h1>
         <p className="mb-5 text-sm text-slate-600">Selecciona una cancha, elegi un horario y confirma tu reserva.</p>
 
         {(selectedClub || selectedField) && (
-          <div className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className={`${ui.card} mb-4 p-4`}>
             <p className="text-sm text-slate-700">
               <span className="font-semibold">Club:</span> {selectedClub ? selectedClub.name : 'Sin seleccionar'}
             </p>
@@ -247,11 +249,11 @@ export default function Availability() {
         )}
 
         {isLoadingFields ? (
-          <div className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className={`${ui.card} mb-5 p-4`}>
             <p className="text-sm text-slate-600">Cargando canchas...</p>
           </div>
         ) : filteredFields.length === 0 ? (
-          <div className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className={`${ui.card} mb-5 p-4`}>
             <p className="font-semibold text-slate-900">No hay canchas disponibles para este club.</p>
             <p className="mt-1 text-sm text-slate-600">Prueba desde Explorar con otro club.</p>
           </div>
@@ -260,7 +262,7 @@ export default function Availability() {
         <select
           value={selectedFieldId}
           onChange={(e) => setSelectedFieldId(e.target.value)}
-          className="mb-4 p-2 border rounded w-full max-w-md"
+          className={`${ui.input} mb-4 max-w-md`}
           disabled={isLoadingFields || filteredFields.length === 0}
         >
           <option value="">Seleccionar cancha</option>
@@ -274,19 +276,19 @@ export default function Availability() {
         <button
           onClick={handleCheckAvailability}
           disabled={!selectedFieldId || isLoadingFields || filteredFields.length === 0}
-          className="mb-6 rounded-lg bg-slate-900 px-4 py-2.5 font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+          className={`mb-6 ${ui.buttonPrimary}`}
         >
           {isLoadingAvailability ? 'Cargando horarios...' : 'Ver disponibilidad'}
         </button>
 
         {message && (
-          <div className="mb-4 rounded-xl border border-slate-200 bg-white p-3 text-sm font-semibold text-slate-700 shadow-sm">
+          <div className={`${ui.panelInfo} mb-4 p-3 text-sm font-semibold text-slate-700`}>
             {message}
           </div>
         )}
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <section className="lg:col-span-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+          <section className={`lg:col-span-2 ${ui.card} p-4 sm:p-5`}>
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-900">Horarios por dia</h2>
               <div className="flex items-center gap-3 text-xs">
@@ -346,7 +348,7 @@ export default function Availability() {
             </div>
           </section>
 
-          <aside className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+          <aside className={`${ui.card} p-4 sm:p-5`}>
             <h2 className="text-lg font-bold text-slate-900">Resumen de reserva</h2>
             {!selectedSlot ? (
               <p className="mt-3 text-sm text-slate-600">Selecciona un horario disponible para continuar.</p>
@@ -373,7 +375,7 @@ export default function Availability() {
               type="button"
               onClick={() => setSelectedSlot(null)}
               disabled={!selectedSlot || isSubmitting}
-              className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed"
+              className={`mt-2 w-full ${ui.buttonSecondary}`}
             >
               Limpiar seleccion
             </button>

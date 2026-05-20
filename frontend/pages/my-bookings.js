@@ -2,6 +2,7 @@ import withAuth from '../components/withAuth';
 import { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import { apiFetch } from '../lib/api';
+import ui from '../lib/ui';
 
 function MyBookings() {
   const [bookings, setBookings] = useState([]);
@@ -70,24 +71,25 @@ function MyBookings() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className={`${ui.page} ${ui.pageGradient}`}>
       <Navbar />
-      <div className="mx-auto max-w-5xl p-6">
-        <h1 className="mb-2 text-3xl font-extrabold tracking-tight text-slate-900">Mis Reservas</h1>
-        <p className="mb-6 text-sm text-slate-600">Consulta estado, horario y cancha de cada reserva.</p>
+      <div className={ui.container}>
+        <span className={ui.badgeSuccess}>Seguimiento de reservas</span>
+        <h1 className={ui.title}>Mis Reservas</h1>
+        <p className={`${ui.subtitle} mb-6`}>Consulta estado, horario y cancha de cada reserva.</p>
 
         {feedback && (
-          <div className="mb-4 rounded-xl border border-slate-200 bg-white p-3 text-sm font-semibold text-slate-700 shadow-sm">
+          <div className={`${ui.panelInfo} mb-4 p-3 text-sm font-semibold text-slate-700`}>
             {feedback}
           </div>
         )}
 
         {loading ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-600 shadow-sm">
+          <div className={`${ui.card} p-6 text-sm text-slate-600`}>
             Cargando reservas...
           </div>
         ) : bookings.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <div className={`${ui.card} p-8 text-center`}>
             <p className="font-semibold text-slate-900">Aun no tienes reservas activas.</p>
             <p className="mt-1 text-sm text-slate-600">Explora clubes y reserva tu proximo turno.</p>
           </div>
@@ -115,7 +117,7 @@ function MyBookings() {
                   <button
                     onClick={() => handleCancel(b.id)}
                     disabled={isCancelled}
-                    className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                    className="rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-slate-300"
                   >
                     {isCancelled ? 'Cancelada' : 'Cancelar'}
                   </button>

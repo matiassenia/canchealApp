@@ -7,6 +7,7 @@ import Link from 'next/link';
 import Navbar from '../components/Navbar';
 import withAuth from '../components/withAuth';
 import { apiFetch } from '../lib/api';
+import ui from '../lib/ui';
 
 function Clubs() {
   const [clubs, setClubs] = useState([]);
@@ -35,20 +36,21 @@ function Clubs() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className={`${ui.page} ${ui.pageGradient}`}>
       <Navbar />
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
+      <div className={ui.container}>
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Clubes disponibles</h1>
-          <p className="mt-2 text-slate-600">Encontra tu cancha ideal y reserva en minutos.</p>
+          <span className={ui.badgeSuccess}>Descubrimiento local</span>
+          <h1 className={ui.title}>Clubes disponibles</h1>
+          <p className={ui.subtitle}>Encontra tu cancha ideal y reserva en minutos.</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {clubs.map((club) => (
-            <article key={club.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+            <article key={club.id} className={`overflow-hidden ${ui.card} ${ui.cardHover}`}>
               <div className="h-28 bg-gradient-to-r from-emerald-600 via-green-600 to-lime-600" />
               <div className="p-5">
-                <p className="mb-2 inline-block rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                <p className={ui.badge}>
                   Zona {club.zone || 'Sin zona'}
                 </p>
                 <h2 className="text-xl font-bold text-slate-900">{club.name}</h2>
@@ -57,13 +59,13 @@ function Clubs() {
                 <div className="mt-4 flex gap-2">
                   <Link
                     href={`/clubs/${club.id}`}
-                    className="inline-block w-full rounded-lg bg-slate-900 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-slate-800"
+                    className={`inline-block w-full text-center ${ui.buttonPrimary}`}
                   >
                     Ver perfil
                   </Link>
                   <button
                     onClick={() => router.push(`/availability?clubId=${club.id}`)}
-                    className="inline-block w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    className={`inline-block w-full ${ui.buttonSecondary}`}
                   >
                     Reservar
                   </button>
