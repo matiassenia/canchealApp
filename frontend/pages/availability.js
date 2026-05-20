@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import { apiFetch } from '../lib/api';
 
+const WEEKDAY_LABELS = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
+
 export default function Availability() {
   const [fields, setFields] = useState([]);
   const [selectedFieldId, setSelectedFieldId] = useState('');
@@ -38,6 +40,11 @@ export default function Availability() {
 
   const handleBooking = async (slot) => {
     try {
+      const now = new Date();
+      const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const startAt = new Date(`${localDate}T${slot.startTime}:00`).toISOString();
+      const endAt = new Date(`${localDate}T${slot.endTime}:00`).toISOString();
+
       const res = await apiFetch('/bookings', {
         method: 'POST',
         headers: {
@@ -45,9 +52,8 @@ export default function Availability() {
         },
         body: JSON.stringify({
           fieldId: selectedFieldId,
-          day: slot.day,
-          startTime: slot.start_time,
-          endTime: slot.end_time
+          startAt,
+          endAt
         })
       });
 
@@ -92,7 +98,7 @@ export default function Availability() {
           {availability.map((slot, index) => (
             <li key={index} className="bg-white p-4 shadow rounded flex justify-between items-center">
               <div>
-                <strong>{slot.day}</strong> - {slot.start_time} a {slot.end_time}
+                <strong>{WEEKDAY_LABELS[slot.weekday] || `Dia ${slot.weekday}`}</strong> - {slot.startTime} a {slot.endTime}
               </div>
               <button
                 onClick={() => handleBooking(slot)}
