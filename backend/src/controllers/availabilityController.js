@@ -27,17 +27,40 @@ async function getAvailability(req, res) {
 
 async function setAvailability(req, res) {
   const { fieldId, slots } = req.body;
+  const userId = req.user && req.user.id;
+  const role = req.user && req.user.role;
+  const numericFieldId = Number(fieldId);
 
-  if (!fieldId || !Array.isArray(slots)) {
+  if (!userId) {
+    return res.status(401).json({ error: 'Token missing or invalid' });
+  }
+
+  if (!numericFieldId || !Array.isArray(slots)) {
     return res.status(400).json({ error: 'Datos incompletos.' });
   }
 
   try {
-    await prisma.availability.deleteMany({ where: { fieldId } });
+    const field = await prisma.field.findUnique({
+      where: { id: numericFieldId },
+      select: { id: true, club: { select: { ownerId: true } } }
+    });
+
+    if (!field) {
+      return res.status(404).json({ error: 'Cancha no encontrada.' });
+    }
+
+    const isOwner = field.club && field.club.ownerId === userId;
+    const isAdmin = role === 'ADMIN';
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ error: 'No tienes permisos para modificar esta disponibilidad.' });
+    }
+
+    await prisma.availability.deleteMany({ where: { fieldId: numericFieldId } });
 
     await prisma.availability.createMany({
       data: slots.map(({ weekday, startTime, endTime }) => ({
-        fieldId,
+        fieldId: numericFieldId,
         weekday,
         startTime,
         endTime
