@@ -18,6 +18,7 @@ export default function ClubDashboard() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [creatingField, setCreatingField] = useState(false);
   const [savingAvailability, setSavingAvailability] = useState(false);
 
   const fetchFields = async () => {
@@ -77,8 +78,12 @@ export default function ClubDashboard() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (creatingField) return;
 
     try {
+      setCreatingField(true);
+      setError(null);
+      setSuccess(null);
       const res = await apiFetch('/fields', {
         method: 'POST',
         headers: {
@@ -101,6 +106,8 @@ export default function ClubDashboard() {
       fetchFields();
     } catch (err) {
       setError(err.message);
+    } finally {
+      setCreatingField(false);
     }
   };
 
@@ -200,9 +207,10 @@ export default function ClubDashboard() {
 
         <button
           type="submit"
+          disabled={creatingField}
           className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
         >
-          Crear cancha
+          {creatingField ? 'Creando cancha...' : 'Crear cancha'}
         </button>
       </form>
 
@@ -252,6 +260,12 @@ export default function ClubDashboard() {
 
         <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="mb-4 text-lg font-bold text-slate-900">Listado de canchas</h2>
+          {fields.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-slate-300 p-4">
+              <p className="font-semibold text-slate-900">Aun no hay canchas creadas.</p>
+              <p className="mt-1 text-sm text-slate-600">Cuando crees una cancha aparecera en este listado.</p>
+            </div>
+          ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {fields.map((field) => (
               <article key={field.id} className="rounded-xl border border-slate-200 p-4">
@@ -266,6 +280,7 @@ export default function ClubDashboard() {
               </article>
             ))}
           </div>
+          )}
         </section>
       </div>
     </div>

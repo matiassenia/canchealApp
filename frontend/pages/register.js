@@ -11,11 +11,15 @@ export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setError(null);
     try {
+      setIsSubmitting(true);
       const res = await apiFetch('/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -28,7 +32,9 @@ export default function Register() {
       alert('¡Registro exitoso! Ahora podés iniciar sesión.');
       router.push('/login');
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'No se pudo completar el registro.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -77,8 +83,8 @@ export default function Register() {
             </div>
           )}
 
-          <button type="submit" className={`w-full ${ui.buttonPrimary}`}>
-            Crear cuenta
+          <button type="submit" disabled={isSubmitting} className={`w-full ${ui.buttonPrimary}`}>
+            {isSubmitting ? 'Creando cuenta...' : 'Crear cuenta'}
           </button>
 
           <p className="mt-4 text-center text-sm text-slate-600">

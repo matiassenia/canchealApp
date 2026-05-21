@@ -8,6 +8,7 @@ function MyBookings() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [feedback, setFeedback] = useState('');
+  const [cancellingBookingId, setCancellingBookingId] = useState(null);
 
   const getStatusStyles = (status) => {
     if (status === 'CONFIRMED') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
@@ -52,6 +53,7 @@ function MyBookings() {
     if (!confirm('¿Estás seguro de cancelar esta reserva?')) return;
 
     setFeedback('');
+    setCancellingBookingId(bookingId);
 
     try {
       const res = await apiFetch(`/bookings/${bookingId}`, {
@@ -67,6 +69,8 @@ function MyBookings() {
     } catch (err) {
       console.error('Cancelación fallida:', err);
       setFeedback(`❌ ${err.message}`);
+    } finally {
+      setCancellingBookingId(null);
     }
   };
 
@@ -97,6 +101,7 @@ function MyBookings() {
           <ul className="space-y-4">
             {bookings.map((b) => {
               const isCancelled = b.status === 'CANCELLED';
+              const isCancelling = cancellingBookingId === b.id;
               return (
               <li
                 key={b.id}
@@ -116,10 +121,10 @@ function MyBookings() {
                   </div>
                   <button
                     onClick={() => handleCancel(b.id)}
-                    disabled={isCancelled}
+                    disabled={isCancelled || isCancelling}
                     className="rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-slate-300"
                   >
-                    {isCancelled ? 'Cancelada' : 'Cancelar'}
+                    {isCancelled ? 'Cancelada' : isCancelling ? 'Cancelando...' : 'Cancelar'}
                   </button>
                 </div>
               </li>

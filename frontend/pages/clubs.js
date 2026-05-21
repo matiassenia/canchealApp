@@ -11,10 +11,14 @@ import ui from '../lib/ui';
 
 function Clubs() {
   const [clubs, setClubs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const router = useRouter();
 
   useEffect(() => {
     const fetchClubs = async () => {
+      setLoading(true);
+      setError('');
       try {
         const res = await apiFetch('/clubs');
 
@@ -29,6 +33,9 @@ function Clubs() {
 
       } catch (err) {
         console.error('Error al obtener clubes:', err);
+        setError('No se pudieron cargar los clubes. Intenta nuevamente.');
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -45,7 +52,17 @@ function Clubs() {
           <p className={ui.subtitle}>Encontra tu cancha ideal y reserva en minutos.</p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        {loading ? (
+          <div className={`${ui.card} p-6 text-sm text-slate-600`}>Cargando clubes...</div>
+        ) : error ? (
+          <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700">{error}</div>
+        ) : clubs.length === 0 ? (
+          <div className={`${ui.card} p-8 text-center`}>
+            <p className="font-semibold text-slate-900">No hay clubes disponibles por el momento.</p>
+            <p className="mt-1 text-sm text-slate-600">Vuelve a intentar en unos minutos.</p>
+          </div>
+        ) : (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {clubs.map((club) => (
             <article key={club.id} className={`overflow-hidden ${ui.card} ${ui.cardHover}`}>
               <div className="h-28 bg-gradient-to-r from-emerald-600 via-green-600 to-lime-600" />
@@ -74,6 +91,7 @@ function Clubs() {
             </article>
           ))}
         </div>
+        )}
       </div>
     </div>
   );

@@ -11,11 +11,15 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setError(null);
     try {
+      setIsSubmitting(true);
       const res = await apiFetch('/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -42,7 +46,9 @@ export default function Login() {
         router.push('/clubs');
       }
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'No se pudo iniciar sesión.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -82,8 +88,8 @@ export default function Login() {
             </div>
           )}
 
-          <button type="submit" className={`w-full ${ui.buttonPrimary}`}>
-            Ingresar
+          <button type="submit" disabled={isSubmitting} className={`w-full ${ui.buttonPrimary}`}>
+            {isSubmitting ? 'Ingresando...' : 'Ingresar'}
           </button>
 
           <p className="mt-4 text-center text-sm text-slate-600">

@@ -22,6 +22,7 @@ export default function OwnerDashboard() {
   const [description, setDescription] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [creatingClub, setCreatingClub] = useState(false);
   const router = useRouter();
 
   const fetchClubs = async (ownerId) => {
@@ -55,6 +56,7 @@ export default function OwnerDashboard() {
 
   const handleCreateClub = async (e) => {
     e.preventDefault();
+    if (creatingClub) return;
     const token = localStorage.getItem('token');
     const decoded = decodeToken(token);
     if (!decoded || !decoded.id) {
@@ -64,6 +66,8 @@ export default function OwnerDashboard() {
     }
 
     try {
+      setCreatingClub(true);
+      setError(null);
       const res = await apiFetch('/clubs', {
         method: 'POST',
         headers: {
@@ -90,6 +94,8 @@ export default function OwnerDashboard() {
       fetchClubs(decoded.id); // refresca clubes
     } catch (err) {
       setError(err.message);
+    } finally {
+      setCreatingClub(false);
     }
   };
 
@@ -166,9 +172,10 @@ export default function OwnerDashboard() {
 
             <button
               type="submit"
+              disabled={creatingClub}
               className={`w-full ${ui.buttonPrimary}`}
             >
-              Crear club
+              {creatingClub ? 'Creando club...' : 'Crear club'}
             </button>
           </form>
 
