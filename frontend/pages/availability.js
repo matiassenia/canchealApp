@@ -43,9 +43,12 @@ const getLocalDateString = () => {
 };
 
 const getEndTime = (startTime) => {
-  const [h, m] = startTime.split(':').map(Number);
-  if (m === 0) return `${String(h).padStart(2, '0')}:30`;
-  return `${String(h + 1).padStart(2, '0')}:00`;
+  const startMinutes = parseTimeToMinutes(startTime);
+  if (startMinutes === null) return startTime;
+  const endMinutes = startMinutes + 60;
+  const hours = Math.floor(endMinutes / 60);
+  const minutes = endMinutes % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 };
 
 export default function Availability() {
@@ -197,7 +200,13 @@ export default function Availability() {
 
     const slots = TIME_SLOTS.map((time) => {
       const endTime = getEndTime(time);
-      const availableByRule = rules.some((rule) => isWithinRange(time, rule.startTime, rule.endTime));
+      const availableByRule = rules.some((rule) => {
+        if (!isWithinRange(time, rule.startTime, rule.endTime)) return false;
+        const slotEndMinutes = parseTimeToMinutes(endTime);
+        const ruleEndMinutes = parseTimeToMinutes(rule.endTime);
+        if (slotEndMinutes === null || ruleEndMinutes === null) return false;
+        return slotEndMinutes <= ruleEndMinutes;
+      });
 
       let status = 'unavailable';
       if (availableByRule) {
@@ -357,7 +366,9 @@ export default function Availability() {
                 <p><span className="font-semibold">Cancha:</span> {selectedField ? selectedField.name : `#${selectedFieldId}`}</p>
                 <p><span className="font-semibold">Club:</span> {selectedClub ? selectedClub.name : 'Sin club seleccionado'}</p>
                 <p><span className="font-semibold">Dia:</span> {WEEKDAY_LABELS[selectedSlot.weekday]}</p>
-                <p><span className="font-semibold">Horario:</span> {selectedSlot.startTime} - {selectedSlot.endTime}</p>
+                <p><span className="font-semibold">Inicio:</span> {selectedSlot.startTime}</p>
+                <p><span className="font-semibold">Fin:</span> {selectedSlot.endTime}</p>
+                <p><span className="font-semibold">Duracion:</span> 60 minutos</p>
                 <p><span className="font-semibold">Estado:</span> {selectedSlot.status === 'available' ? 'Disponible' : 'No disponible'}</p>
               </div>
             )}
