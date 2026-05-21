@@ -1,8 +1,10 @@
 //### 📄 `pages/register.js`
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { apiFetch } from '../lib/api';
+import ui from '../lib/ui';
 
 export default function Register() {
   const [name, setName] = useState('');
@@ -31,41 +33,62 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center px-4">
-      <form onSubmit={handleRegister} className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
-        <h1 className="text-2xl font-bold text-center mb-6 text-gray-800">Registrarse</h1>
+    <div className={`${ui.page} ${ui.pageGradient} flex items-center justify-center px-4 py-10`}>
+      <div className="w-full max-w-md">
+        <div className="mb-6 text-center">
+          <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">CanchealApp</p>
+          <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-slate-900">Creá tu cuenta</h1>
+          <p className="mt-2 text-sm text-slate-600">Sumate a la plataforma para descubrir clubes, reservar y gestionar partidos.</p>
+        </div>
 
-        <input
-          type="text"
-          placeholder="Nombre completo"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="mb-4 w-full p-3 border rounded-lg focus:outline-none focus:ring focus:border-green-500"
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="mb-4 w-full p-3 border rounded-lg focus:outline-none focus:ring focus:border-green-500"
-        />
-        <input
-          type="password"
-          placeholder="Contraseña"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="mb-4 w-full p-3 border rounded-lg focus:outline-none focus:ring focus:border-green-500"
-        />
+        <form onSubmit={handleRegister} className={`${ui.card} p-6 sm:p-8`}>
+          <h2 className="mb-5 text-xl font-bold text-slate-900">Registro</h2>
 
-        {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
+          <label className="mb-1 block text-sm font-semibold text-slate-700">Nombre completo</label>
+          <input
+            type="text"
+            placeholder="Juan Perez"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className={`${ui.input} mb-4`}
+          />
 
-        <button
-          type="submit"
-          className="bg-green-600 text-white w-full py-2 rounded-lg font-semibold hover:bg-green-700 transition"
-        >
-          Registrarme
-        </button>
-      </form>
+          <label className="mb-1 block text-sm font-semibold text-slate-700">Email</label>
+          <input
+            type="email"
+            placeholder="tuemail@ejemplo.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={`${ui.input} mb-4`}
+          />
+
+          <label className="mb-1 block text-sm font-semibold text-slate-700">Contraseña</label>
+          <input
+            type="password"
+            placeholder="Elegí una contraseña"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className={`${ui.input} mb-4`}
+          />
+
+          {error && (
+            <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-700">
+              {error}
+            </div>
+          )}
+
+          <button type="submit" className={`w-full ${ui.buttonPrimary}`}>
+            Crear cuenta
+          </button>
+
+          <p className="mt-4 text-center text-sm text-slate-600">
+            ¿Ya tenés cuenta?{' '}
+            <Link href="/login" className="font-semibold text-emerald-700 hover:underline">
+              Iniciar sesión
+            </Link>
+          </p>
+        </form>
+      </div>
     </div>
   );
 }
