@@ -3,6 +3,7 @@ import Navbar from '../components/Navbar';
 import withAuth from '../components/withAuth';
 import { apiFetch } from '../lib/api';
 import ClubDiscoveryCard, { enrichClubForDiscovery } from '../components/ClubDiscoveryCard';
+import { RANKING_POOL } from '../lib/club-experience';
 import ui from '../lib/ui';
 import { PageHeader, SkeletonCard, StateBlock } from '../components/ui-kit';
 
@@ -58,8 +59,16 @@ function ExplorePage() {
         <PageHeader eyebrow="Marketplace de canchas" title="Explorar clubes" description="Busca por nombre, zona o modalidad y llega rapido al detalle del club." />
 
         <section className={`mb-6 ${ui.card} p-4 sm:p-5`}>
+          <div className="mb-4 flex flex-wrap gap-2">
+            {RANKING_POOL.map((ranking) => (
+              <span key={ranking} className="rounded-full bg-emerald-950 px-3 py-1 text-xs font-black text-lime-200 shadow-sm">
+                {ranking}
+              </span>
+            ))}
+          </div>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             <input
+              aria-label="Buscar club"
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -68,6 +77,7 @@ function ExplorePage() {
             />
 
             <select
+              aria-label="Filtrar por zona"
               value={zoneFilter}
               onChange={(e) => setZoneFilter(e.target.value)}
               className={ui.input}
@@ -79,6 +89,7 @@ function ExplorePage() {
             </select>
 
             <select
+              aria-label="Filtrar por tipo de cancha"
               value={fieldTypeFilter}
               onChange={(e) => setFieldTypeFilter(e.target.value)}
               className={ui.input}

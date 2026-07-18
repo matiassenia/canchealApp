@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import ui from '../lib/ui';
+import { getClubExperienceMeta } from '../lib/club-experience';
+import { FeatureBadges, RankingPill, RatingSummary } from './ui-kit';
 
 export function enrichClubForDiscovery(club) {
   return {
@@ -11,11 +13,15 @@ export function enrichClubForDiscovery(club) {
 
 export default function ClubDiscoveryCard({ club }) {
   const router = useRouter();
+  const meta = getClubExperienceMeta(club);
 
   return (
     <article className={`overflow-hidden ${ui.card} ${ui.cardHover}`}>
-      <div className="relative h-32 bg-[linear-gradient(135deg,#064e3b,#16a34a_55%,#84cc16)]">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.24),transparent_28%)]" />
+      <div className="relative h-52 bg-[linear-gradient(135deg,#064e3b,#16a34a_55%,#84cc16)]">
+        <div className="absolute inset-0 bg-[url('/images/football-field.svg')] bg-cover bg-center opacity-85 transition duration-500 hover:scale-105" />
+        <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/75 via-transparent to-white/5" />
+        <div className="absolute left-4 top-4"><RankingPill value={meta.rankingLabel} /></div>
+        <div className="absolute bottom-4 right-4"><RatingSummary rating={meta.ratingAverage} reviewsCount={meta.reviewsCount} /></div>
       </div>
       <div className="p-5">
         <div className="mb-2 flex items-center justify-between gap-2">
@@ -38,6 +44,12 @@ export default function ClubDiscoveryCard({ club }) {
             </span>
           )}
         </div>
+
+        <div className="mt-3"><FeatureBadges features={meta.features} /></div>
+        <blockquote className="mt-3 rounded-2xl bg-emerald-50/80 p-3 text-xs font-semibold leading-5 text-emerald-950/75">
+          <span className="mb-1 block text-[10px] font-black uppercase tracking-wide text-emerald-800/70">Opinion destacada</span>
+          <span className="italic">“{meta.reviewPreview}”</span>
+        </blockquote>
 
         <p className="mt-4 text-sm font-bold text-emerald-700">Consultar disponibilidad</p>
 

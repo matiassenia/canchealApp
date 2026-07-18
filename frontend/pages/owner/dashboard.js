@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import Navbar from '../../components/Navbar';
 import { apiFetch } from '../../lib/api';
 import ui from '../../lib/ui';
-import { PageHeader, StateBlock } from '../../components/ui-kit';
+import { KpiCard, PremiumSurface, PageHeader, StateBlock } from '../../components/ui-kit';
 
 const decodeToken = (token) => {
   try {
@@ -33,7 +33,6 @@ export default function OwnerDashboard() {
       if (!res.ok) throw new Error(data.error || 'No se pudieron cargar los clubes.');
       setClubs(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Error al obtener clubes:', err);
       setError(err.message);
     }
   };
@@ -112,13 +111,9 @@ export default function OwnerDashboard() {
       <div className={ui.container}>
         <PageHeader eyebrow="Panel operativo" title="Panel del club" description={`${owner?.role === 'OWNER' ? 'Vista para propietarios' : 'Vista operativa'} para crear clubes, cargar canchas y gestionar disponibilidad.`} />
 
-        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {statCards.map((stat) => (
-            <article key={stat.label} className={`${ui.card} p-4`}>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{stat.label}</p>
-              <p className="mt-2 text-2xl font-extrabold text-slate-900">{stat.value}</p>
-              <p className="mt-1 text-xs text-slate-500">{stat.hint}</p>
-            </article>
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {statCards.map((stat, index) => (
+            <KpiCard key={stat.label} {...stat} accent={index % 2 ? 'emerald' : 'lime'} />
           ))}
         </div>
 
@@ -176,7 +171,7 @@ export default function OwnerDashboard() {
             </button>
           </form>
 
-          <section className={`${ui.card} p-6 lg:col-span-2`}>
+          <PremiumSurface className="p-6 lg:col-span-2">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-900">Mis clubes</h2>
               <span className="text-sm text-slate-500">{clubs.length} registrados</span>
@@ -189,7 +184,8 @@ export default function OwnerDashboard() {
             ) : (
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 {clubs.map((club) => (
-                  <article key={club.id} className="rounded-xl border border-slate-200 p-4">
+                  <article key={club.id} className="group rounded-2xl border border-white/55 bg-white/65 p-4 shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:shadow-xl">
+                    <div className="mb-3 h-24 rounded-2xl bg-[url('/images/football-field.svg')] bg-cover bg-center" />
                     <div className="mb-2 flex items-center justify-between">
                       <h3 className="text-base font-bold text-slate-900">{club.name}</h3>
                       <span className={ui.badgeSuccess}>Activo</span>
@@ -199,12 +195,14 @@ export default function OwnerDashboard() {
 
                     <div className="mt-3 flex gap-2">
                       <button
+                        type="button"
                         className={`w-full ${ui.buttonPrimary}`}
                         onClick={() => router.push(`/owner/club/${club.id}`)}
                       >
                         Gestionar club
                       </button>
                       <button
+                        type="button"
                         className={`w-full ${ui.buttonSecondary}`}
                         onClick={() => router.push(`/availability?clubId=${club.id}`)}
                       >
@@ -215,13 +213,13 @@ export default function OwnerDashboard() {
                 ))}
               </div>
             )}
-          </section>
+          </PremiumSurface>
         </div>
 
-        <section className={`mt-6 ${ui.card} p-6`}>
+        <PremiumSurface className="mt-6 p-6">
           <h2 className="text-lg font-bold text-slate-900">Reservas operativas</h2>
           <p className="mt-1 text-sm text-slate-600">Los endpoints actuales no exponen reservas por owner. Se mantiene este espacio listo para conectar datos reales en una fase posterior.</p>
-        </section>
+        </PremiumSurface>
       </div>
     </div>
   );

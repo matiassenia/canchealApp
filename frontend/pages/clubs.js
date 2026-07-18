@@ -7,6 +7,7 @@ import Link from 'next/link';
 import Navbar from '../components/Navbar';
 import withAuth from '../components/withAuth';
 import { apiFetch } from '../lib/api';
+import { RANKING_POOL } from '../lib/club-experience';
 import ui from '../lib/ui';
 import { ClubCard, PageHeader, Pagination, SkeletonCard, StateBlock } from '../components/ui-kit';
 
@@ -35,8 +36,7 @@ function Clubs() {
         setClubs(Array.isArray(data) ? data : (data.data || data.clubs || []));
         setPagination(data.pagination || null);
 
-      } catch (err) {
-        console.error('Error al obtener clubes:', err);
+      } catch {
         setError('No se pudieron cargar los clubes. Intenta nuevamente.');
       } finally {
         setLoading(false);
@@ -57,8 +57,16 @@ function Clubs() {
           actions={<Link href="/explore" className={ui.buttonSecondary}>Explorar con filtros</Link>}
         />
 
+        <section className="mb-6 grid gap-3 sm:grid-cols-4">
+          {RANKING_POOL.map((ranking) => (
+            <div key={ranking} className="rounded-2xl border border-white/55 bg-white/55 px-4 py-3 text-sm font-black text-emerald-950 shadow-sm backdrop-blur-xl">
+              {ranking}
+            </div>
+          ))}
+        </section>
+
         {pagination && !loading && !error && (
-          <p className="mb-4 text-center text-sm text-slate-600">
+          <p className="mb-4 rounded-full bg-white/55 px-4 py-2 text-center text-sm font-bold text-emerald-950 shadow-sm backdrop-blur">
             Mostrando {clubs.length} de {pagination.total} clubes
           </p>
         )}

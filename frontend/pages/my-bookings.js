@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import { apiFetch } from '../lib/api';
 import ui from '../lib/ui';
-import { PageHeader, StateBlock, StatusBadge } from '../components/ui-kit';
+import { PageHeader, PremiumSurface, StateBlock, StatusBadge } from '../components/ui-kit';
 
 function MyBookings() {
   const [bookings, setBookings] = useState([]);
@@ -78,7 +78,7 @@ function MyBookings() {
         const isCancelled = b.status === 'CANCELLED';
         const isCancelling = cancellingBookingId === b.id;
         return (
-          <li key={b.id} className={`rounded-[1.25rem] border p-4 shadow-sm ${isCancelled ? 'border-rose-200 bg-rose-50/60' : 'border-emerald-950/10 bg-white'}`}>
+          <li key={b.id} className={`rounded-[1.25rem] border p-4 shadow-sm backdrop-blur ${isCancelled ? 'border-rose-200 bg-rose-50/75' : 'border-white/55 bg-white/70'}`}>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -123,16 +123,22 @@ function MyBookings() {
         ) : (
           <div className="space-y-8">
             <section>
-              <h2 className="mb-3 text-xl font-black text-slate-950">Proximas</h2>
-              {upcoming.length ? renderBookings(upcoming) : <StateBlock title="No tenes reservas proximas" description="Cuando reserves un turno futuro aparecera aca." />}
+              <PremiumSurface className="p-5">
+                <h2 className="mb-3 text-xl font-black text-slate-950">Proximas</h2>
+                {upcoming.length ? renderBookings(upcoming) : <StateBlock title="No tenes reservas proximas" description="Cuando reserves un turno futuro aparecera aca." />}
+              </PremiumSurface>
             </section>
             <section>
-              <h2 className="mb-3 text-xl font-black text-slate-950">Pasadas</h2>
-              {past.length ? renderBookings(past) : <StateBlock title="No hay reservas pasadas" />}
+              <PremiumSurface className="p-5">
+                <h2 className="mb-3 text-xl font-black text-slate-950">Pasadas</h2>
+                {past.length ? renderBookings(past) : <StateBlock title="No hay reservas pasadas" />}
+              </PremiumSurface>
             </section>
             <section>
-              <h2 className="mb-3 text-xl font-black text-slate-950">Canceladas</h2>
-              {cancelled.length ? renderBookings(cancelled) : <StateBlock title="No hay reservas canceladas" />}
+              <PremiumSurface className="p-5">
+                <h2 className="mb-3 text-xl font-black text-slate-950">Canceladas</h2>
+                {cancelled.length ? renderBookings(cancelled) : <StateBlock title="No hay reservas canceladas" />}
+              </PremiumSurface>
             </section>
           </div>
         )}

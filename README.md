@@ -1,153 +1,162 @@
 # CanchealApp
 
-Football field booking platform with player discovery flow and owner operations flow.
+![License](https://img.shields.io/badge/license-ISC-blue.svg)
+![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?logo=node.js&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)
+![Express](https://img.shields.io/badge/Express-4-000000?logo=express)
+![Prisma](https://img.shields.io/badge/Prisma-6-2D3748?logo=prisma)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?logo=postgresql&logoColor=white)
 
-## Product Summary
+CanchealApp is a full-stack football field booking platform for players and club owners. Players can discover clubs, inspect fields, check availability, create reservations, and manage their booking history. Owners can publish clubs, add fields, configure weekly availability, and operate their venue from a dedicated dashboard.
 
-CanchealApp helps:
-- **Players** discover clubs, check availability, book slots, and manage reservations.
-- **Club owners** manage clubs/fields, configure weekly availability, and monitor operational KPIs.
+The project is intentionally pragmatic: a Next.js frontend, an Express API, Prisma as the data access layer, and PostgreSQL as the source of truth.
 
-Current architecture stays intentionally simple: one backend API + one frontend app.
+> Banner placeholder: add a production-ready banner at `docs/images/banner.png` when visual assets are captured.
+
+## Demo
+
+- Frontend production: `https://cancheal-app.vercel.app`
+- Backend production: `https://canchealapp.onrender.com`
+- Backend health check: `https://canchealapp.onrender.com/health`
+
+## Screenshots
+
+Screenshots are intentionally referenced as documentation assets. Add the files below when capturing the final product screens:
+
+| Screen | Path |
+| --- | --- |
+| Home | `docs/images/home.png` |
+| Explore | `docs/images/explore.png` |
+| Club detail | `docs/images/club.png` |
+| Booking flow | `docs/images/booking.png` |
+| Owner dashboard | `docs/images/dashboard.png` |
+
+## Features
+
+### Users
+
+- Account registration and login.
+- JWT-based authenticated sessions.
+- Club marketplace and discovery views.
+- Club profile pages with fields and booking calls to action.
+- Field availability lookup by date.
+- Booking creation with backend overlap protection.
+- Booking history grouped by upcoming, past, and cancelled reservations.
+- Booking cancellation.
+
+### Owners
+
+- Owner dashboard for operational workflows.
+- Club creation for authenticated `OWNER` or `ADMIN` accounts.
+- Field creation per owned club.
+- Weekly availability management.
+- Real operational counters based on clubs and fields already persisted.
+
+### Platform
+
+- Next.js Pages Router frontend.
+- Express API with route/controller separation.
+- Prisma ORM over PostgreSQL.
+- Role-aware authorization using `USER`, `OWNER`, and `ADMIN`.
+- Responsive sports-oriented design system built with TailwindCSS.
+- Vercel frontend deployment and Render backend deployment.
 
 ## Architecture
 
-```text
-Frontend (Next.js pages router)
-        |
-        v
-Backend API (Express)
-        |
-        v
-Prisma ORM
-        |
-        v
-PostgreSQL
+```mermaid
+flowchart LR
+  Browser[Browser] --> NextJS[Next.js Frontend]
+  NextJS --> API[Express API]
+  API --> Prisma[Prisma Client]
+  Prisma --> PostgreSQL[(PostgreSQL)]
 ```
 
-- `frontend/`: Next.js UI and booking UX
-- `backend/`: Express routes/controllers, auth, Prisma data access
-- `docker-compose.yml`: local Postgres
+The frontend owns rendering, routing, client-side authentication storage, and product flows. The backend owns authentication, authorization, validation, availability generation, reservation conflict checks, and persistence.
 
-## Tech Stack
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full architecture notes.
 
-- **Frontend:** Next.js 15, React 19, Tailwind CSS
-- **Backend:** Node.js, Express 4, Prisma
-- **Database:** PostgreSQL
-- **Auth:** JWT (Bearer token)
+## Booking Flow
 
-## Core Features
-
-- Register / login
-- Explore clubs and profile pages
-- Contextual booking flow (Explore/Club -> Availability)
-- Slot-based availability UI
-- Booking creation with overlap protection
-- Booking cancellation (`DELETE /bookings/:id`, soft cancel)
-- Owner dashboard and club/field/availability management
-- Role-based authorization (`USER`, `OWNER`, `ADMIN`)
-
-## Booking Flow (Player)
-
-1. Explore clubs (`/explore`) or clubs list (`/clubs`)
-2. Open club profile (`/clubs/[id]`)
-3. Go to availability (`/availability?clubId=...&fieldId=...`)
-4. Select field + slot
-5. Confirm booking
-6. Track/cancel in `My Bookings` (`/my-bookings`)
-
-## Owner Flow
-
-1. Login as owner
-2. Open owner dashboard (`/owner/dashboard`)
-3. Create/manage clubs
-4. Create fields
-5. Edit weekly availability and save
-6. Use operational cards/sections for daily visibility
-
-## API Overview
-
-### Auth
-- `POST /auth/register`
-- `POST /auth/login`
-
-### Clubs
-- `GET /clubs`
-- `POST /clubs` (auth)
-
-### Fields
-- `GET /fields`
-- `GET /fields/club/:id`
-- `POST /fields` (auth)
-
-### Availability
-- `GET /availability/:id`
-- `GET /availability/:id/slots?date=YYYY-MM-DD&slotMinutes=60`
-- `POST /availability` (auth)
-
-### Bookings
-- `POST /bookings` (auth)
-- `GET /bookings/user` (auth)
-- `DELETE /bookings/:id` (auth)
-- `PATCH /bookings/:id/status` (auth)
-
-## Demo Credentials
-
-Seed creates these users:
-- `demo.user@cancheal.test` / `demo1234`
-- `demo.owner@cancheal.test` / `demo1234`
-- `demo.admin@cancheal.test` / `demo1234`
-
-## Screenshots (Placeholders)
-
-Add screenshots here before publishing:
-- `docs/screenshots/explore.png`
-- `docs/screenshots/club-profile.png`
-- `docs/screenshots/availability.png`
-- `docs/screenshots/my-bookings.png`
-- `docs/screenshots/owner-dashboard.png`
-
-## Project Structure
-
-```text
-.
-├─ backend/
-│  ├─ index.js
-│  ├─ prisma/
-│  │  ├─ schema.prisma
-│  │  └─ seed.js
-│  └─ src/
-│     ├─ controllers/
-│     ├─ middlewares/
-│     ├─ routes/
-│     └─ utils/
-├─ frontend/
-│  ├─ components/
-│  ├─ lib/
-│  └─ pages/
-└─ docker-compose.yml
+```mermaid
+flowchart TD
+  User[User] --> Marketplace[Explore clubs]
+  Marketplace --> Club[Club detail]
+  Club --> Field[Select field]
+  Field --> Availability[Check available slots]
+  Availability --> Booking[Create booking]
+  Booking --> Database[(PostgreSQL)]
 ```
 
-## Environment Variables
+Bookings are created through the API with server-side validation and overlap detection inside a serializable transaction.
 
-### Backend (`backend/.env`)
-- `DATABASE_URL` (required)
-- `JWT_SECRET` (required)
-- `PORT` (optional, default `4000`)
-- `CORS_ORIGINS` (optional, comma-separated; default allows `http://localhost:3000`)
+## Technologies
 
-### Frontend (`frontend/.env.local`)
-- `NEXT_PUBLIC_API_URL` (recommended: `http://localhost:4000`)
+### Frontend
 
-## Local Setup
+- Next.js 15
+- React 19
+- JavaScript
+- TailwindCSS
 
-### 1) Start database
+### Backend
+
+- Node.js
+- Express 4
+- Prisma Client
+- bcryptjs
+- jsonwebtoken
+- cors
+- dotenv
+
+### Database
+
+- PostgreSQL 15 locally via Docker Compose
+- PostgreSQL-compatible managed database in production
+
+### Deploy
+
+- Vercel for the frontend
+- Render for the backend
+
+### Tools
+
+- Prisma Migrate
+- ESLint through `next lint`
+- Docker Compose for local PostgreSQL
+
+## Installation
+
+This repository contains two independent Node projects: `backend/` and `frontend/`. Commands must be executed inside each folder.
+
+### 1. Start PostgreSQL
+
+From the repository root:
 
 ```bash
 docker compose up -d
 ```
 
-### 2) Backend
+The local database is configured as:
+
+```text
+postgresql://postgres:postgres@localhost:5432/canchas_app
+```
+
+### 2. Configure Backend Environment
+
+Create `backend/.env`:
+
+```env
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/canchas_app?schema=public"
+JWT_SECRET="replace-with-a-local-development-secret"
+PORT=4000
+NODE_ENV=development
+FRONTEND_URL=http://localhost:3000
+FRONTEND_URLS=http://localhost:3000,http://localhost:3001,https://cancheal-app.vercel.app
+CORS_ORIGINS=http://localhost:3000,http://localhost:3001,https://cancheal-app.vercel.app
+```
+
+### 3. Install and Run Backend
 
 ```bash
 cd backend
@@ -156,7 +165,17 @@ npx prisma migrate dev
 npm run dev
 ```
 
-### 3) Frontend
+### 4. Configure Frontend Environment
+
+Create `frontend/.env.local`:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:4000
+```
+
+If this variable is omitted, the frontend API client falls back to same-origin paths.
+
+### 5. Install and Run Frontend
 
 ```bash
 cd frontend
@@ -164,71 +183,158 @@ npm install
 npm run dev
 ```
 
-## Seed / Demo Data
+Open `http://localhost:3000`.
 
-Reset DB and load realistic demo data:
+## Scripts
+
+### Backend
+
+| Script | Description |
+| --- | --- |
+| `npm run dev` | Starts the Express server with `node index.js`. |
+| `npm start` | Starts the Express server. |
+| `npm run db:up` | Starts PostgreSQL using the root `docker-compose.yml`. |
+| `npm run db:down` | Stops the local Docker database. |
+| `npm run prisma:generate` | Generates Prisma Client. |
+| `npm run prisma:migrate` | Runs `prisma migrate dev`. |
+| `npm run seed` | Executes `backend/prisma/seed.js`. |
+| `npm test` | Runs a syntax check for `backend/index.js`. |
+
+### Frontend
+
+| Script | Description |
+| --- | --- |
+| `npm run dev` | Starts the Next.js development server. |
+| `npm run build` | Builds the production frontend. |
+| `npm start` | Starts the production Next.js server. |
+| `npm run lint` | Runs Next.js linting. |
+
+## Environment Variables
+
+### Backend
+
+| Variable | Required | Description |
+| --- | --- | --- |
+| `DATABASE_URL` | Yes | PostgreSQL connection string used by Prisma. |
+| `JWT_SECRET` | Yes | Secret used to sign and verify JWTs. The server exits when missing. |
+| `PORT` | No | API port. Defaults to `4000`. |
+| `NODE_ENV` | No | Runtime environment. |
+| `FRONTEND_URL` | No | Single allowed frontend origin. |
+| `FRONTEND_URLS` | No | Comma-separated allowed frontend origins. |
+| `CORS_ORIGINS` | No | Backward-compatible comma-separated CORS allowlist. |
+
+### Frontend
+
+| Variable | Required | Description |
+| --- | --- | --- |
+| `NEXT_PUBLIC_API_URL` | Recommended | Base URL for API requests, for example `http://localhost:4000`. |
+
+Never commit real secrets or `.env` files.
+
+## Repository Architecture
+
+```text
+.
+├─ backend/
+│  ├─ index.js
+│  ├─ package.json
+│  ├─ prisma/
+│  │  ├─ schema.prisma
+│  │  └─ seed.js
+│  └─ src/
+│     ├─ controllers/
+│     ├─ lib/
+│     ├─ middlewares/
+│     ├─ routes/
+│     └─ utils/
+├─ frontend/
+│  ├─ components/
+│  ├─ lib/
+│  ├─ pages/
+│  ├─ public/
+│  └─ styles/
+├─ docs/
+│  ├─ API.md
+│  ├─ ARCHITECTURE.md
+│  ├─ BACKEND.md
+│  ├─ DATABASE.md
+│  ├─ DECISIONS.md
+│  ├─ DEPLOYMENT.md
+│  ├─ FRONTEND.md
+│  └─ ROADMAP.md
+└─ docker-compose.yml
+```
+
+## Roadmap
+
+### Completed
+
+- Login and registration.
+- JWT authentication.
+- Club marketplace and exploration.
+- Club detail pages.
+- Availability lookup.
+- Booking creation and cancellation.
+- Owner dashboard for seeded or preexisting owner/admin accounts.
+- Club, field, and availability management.
+- Responsive sports-oriented UI.
+
+### In Progress
+
+- Reviews as a product surface. The frontend currently contains deterministic presentation data prepared for future backend integration.
+- Visual polish for marketplace and owner workflows.
+
+### Future
+
+- Real reviews and ratings.
+- Favorites.
+- Payments.
+- Notifications.
+- Club image gallery.
+- Map/geolocation support.
+- AI-assisted discovery and operations.
+
+See [`docs/ROADMAP.md`](docs/ROADMAP.md) for a detailed roadmap.
+
+## Documentation
+
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+- [`docs/DATABASE.md`](docs/DATABASE.md)
+- [`docs/API.md`](docs/API.md)
+- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
+- [`docs/FRONTEND.md`](docs/FRONTEND.md)
+- [`docs/BACKEND.md`](docs/BACKEND.md)
+- [`docs/ROADMAP.md`](docs/ROADMAP.md)
+- [`docs/DECISIONS.md`](docs/DECISIONS.md)
+
+## Contributing
+
+This is currently a personal portfolio project, but contributions can be reviewed using a standard open-source workflow:
+
+1. Open an issue or describe the proposed change.
+2. Keep changes scoped and aligned with the existing architecture.
+3. Run the relevant validation commands before submitting changes.
+4. Avoid committing secrets, generated build output, or unrelated refactors.
+
+Recommended checks:
+
+```bash
+cd frontend
+npm run lint
+npm run build
+```
 
 ```bash
 cd backend
-npx prisma migrate reset --force
-npm run seed
+npm test
+npx prisma validate
 ```
 
-Seed includes:
-- 6 clubs in different zones
-- multiple fields per club (5/7/11)
-- varied weekly availability
-- sample bookings with `PENDING`, `CONFIRMED`, `CANCELLED`
+## License
 
-## Manual QA Checklist
+ISC. See `backend/package.json` for the current package license declaration.
 
-- **Player flow:** login -> explore -> club profile -> availability -> book
-- **Booking reliability:** confirm booking, verify success feedback
-- **Cancellation flow:** cancel from `my-bookings`, verify `CANCELLED` badge
-- **Owner flow:** login owner -> dashboard -> create field -> save availability
-- **Availability management:** switch fields and verify loaded weekly slots
+## Author
 
-## Deployment Notes
-
-### Frontend (Vercel)
-- Root directory: `frontend`
-- Build command: `npm run build`
-- Required env: `NEXT_PUBLIC_API_URL=<your-backend-url>`
-
-### Backend (Railway or Render)
-- Root directory: `backend`
-- Start command: `npm run dev` (or `node index.js`)
-- Required env: `DATABASE_URL`, `JWT_SECRET`, optional `CORS_ORIGINS`, `PORT`
-
-### PostgreSQL (Neon or Supabase)
-- Create Postgres instance
-- Copy connection string to `DATABASE_URL`
-- Run Prisma migrations from backend:
-
-```bash
-cd backend
-npx prisma migrate deploy
-```
-
-## Production Build Readiness (Current Status)
-
-- **Backend:** basic syntax checks pass.
-- **Frontend:** `npm run build` currently fails due lint/type issues in some existing pages/components.
-
-Before public deploy, fix frontend build blockers flagged by Next.js lint/type check.
-
-## Likely Deployment Risks
-
-- Frontend build blockers (lint/parser issues) prevent successful production build.
-- Missing/incorrect `NEXT_PUBLIC_API_URL` causes API calls to wrong origin.
-- Missing `CORS_ORIGINS` in backend may block frontend requests in hosted envs.
-- Weak or leaked JWT secrets in non-local environments.
-- Timezone assumptions in booking display/selection can cause confusion across regions.
-
-## Future Improvements (Scoped, Realistic)
-
-- Add backend automated tests for auth/booking/availability paths.
-- Add frontend e2e smoke tests for booking and cancellation.
-- Improve timezone handling UX and formatting consistency.
-- Add screenshots and short demo video for portfolio presentation.
-- Add lightweight CI checks for `npm run build` and Prisma migration validation.
+**Matías Senia**<br>
+Backend & AI Integration Engineer

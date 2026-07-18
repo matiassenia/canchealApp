@@ -7,6 +7,7 @@ import { useRouter } from 'next/router';
 import Navbar from '../components/Navbar';
 import { apiFetch } from '../lib/api';
 import ui from '../lib/ui';
+import { PremiumSurface } from '../components/ui-kit';
 
 const WEEKDAY_LABELS = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
 
@@ -90,9 +91,8 @@ export default function Availability() {
             setSelectedFieldId(String(firstField.id));
           }
         }
-      } catch (err) {
-        console.error('Error fetching fields:', err);
-        setMessage('❌ No se pudieron cargar clubes o canchas.');
+      } catch {
+        setMessage('No se pudieron cargar clubes o canchas.');
       } finally {
         setIsLoadingFields(false);
       }
@@ -127,9 +127,8 @@ export default function Availability() {
       if (parsedSlots.length === 0) {
         setMessage('No hay horarios disponibles para la fecha seleccionada.');
       }
-    } catch (err) {
-      console.error('Error fetching availability:', err);
-      setMessage('❌ No se pudo cargar la disponibilidad.');
+    } catch {
+      setMessage('No se pudo cargar la disponibilidad.');
     } finally {
       setIsLoadingAvailability(false);
     }
@@ -166,7 +165,6 @@ export default function Availability() {
       setSelectedSlot(null);
       handleCheckAvailability();
     } catch (err) {
-      console.error('Error booking:', err);
       setMessage(err.message);
     } finally {
       setIsSubmitting(false);
@@ -218,7 +216,7 @@ export default function Availability() {
           </div>
         ) : null}
 
-        <section className={`${ui.card} mb-6 grid gap-4 p-4 md:grid-cols-3`}>
+        <PremiumSurface className="mb-6 grid gap-4 p-4 md:grid-cols-3">
           <div>
             <label htmlFor="field" className={ui.label}>Cancha</label>
             <select
@@ -249,7 +247,7 @@ export default function Availability() {
             <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-800">Dia seleccionado</p>
             <p className="mt-2 text-lg font-black capitalize text-slate-950">{formatDateLabel(selectedDate)}</p>
           </div>
-        </section>
+        </PremiumSurface>
 
         {message && (
           <div className={`${ui.panelInfo} mb-4 p-3 text-sm font-semibold text-slate-700`}>
@@ -258,7 +256,7 @@ export default function Availability() {
         )}
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <section className={`lg:col-span-2 ${ui.card} p-4 sm:p-5`}>
+          <PremiumSurface className="p-4 sm:p-5 lg:col-span-2">
             <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="text-lg font-black text-slate-950">Horarios disponibles</h2>
@@ -296,9 +294,9 @@ export default function Availability() {
                 })}
               </div>
             )}
-          </section>
+          </PremiumSurface>
 
-          <aside className={`${ui.card} p-4 sm:p-5`}>
+          <PremiumSurface className="p-4 sm:p-5">
             <h2 className="text-lg font-bold text-slate-900">Resumen de reserva</h2>
             {!selectedSlot ? (
               <p className="mt-3 text-sm text-slate-600">Selecciona un horario disponible para continuar.</p>
@@ -331,7 +329,7 @@ export default function Availability() {
             >
               Limpiar seleccion
             </button>
-          </aside>
+          </PremiumSurface>
         </div>
       </div>
     </div>
