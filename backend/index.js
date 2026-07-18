@@ -14,31 +14,63 @@ if (!process.env.JWT_SECRET) {
   process.exit(1);
 }
 
-const isProduction = process.env.NODE_ENV === 'production';
-const corsOriginsValue = process.env.CORS_ORIGINS || (isProduction ? '' : 'http://localhost:3000');
-const allowedOrigins = corsOriginsValue
-  .split(',')
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+const DEFAULT_ALLOWED_ORIGINS = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'https://cancheal-app.vercel.app',
+];
 
-if (isProduction && !allowedOrigins.length) {
-  console.error('CORS_ORIGINS is required in production.');
+const VERCEL_PROJECT_SUFFIX = '-matias-projects-53ae7b18.vercel.app';
+
+function parseOrigins(value) {
+  return (value || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+}
+
+const configuredOrigins = [
+  process.env.FRONTEND_URL,
+  ...parseOrigins(process.env.FRONTEND_URLS),
+  ...parseOrigins(process.env.CORS_ORIGINS),
+].filter(Boolean);
+
+const allowedOrigins = new Set([...DEFAULT_ALLOWED_ORIGINS, ...configuredOrigins]);
+
+if (allowedOrigins.has('*')) {
+  console.error('CORS origins cannot include * when credentials are enabled.');
   process.exit(1);
 }
 
-if (allowedOrigins.includes('*')) {
-  console.error('CORS_ORIGINS cannot include * when credentials are enabled.');
-  process.exit(1);
+function isAllowedVercelPreview(origin) {
+  return origin.startsWith('https://cancheal-') && origin.endsWith(VERCEL_PROJECT_SUFFIX);
 }
 
-app.use(cors({
+function isAllowedOrigin(origin) {
+  if (!origin) return true;
+  return allowedOrigins.has(origin) || isAllowedVercelPreview(origin);
+}
+
+const corsOptions = {
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error('Not allowed by CORS'));
+    if (isAllowedOrigin(origin)) return callback(null, true);
+    return callback(null, false);
   },
   credentials: true,
-}));
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 204,
+};
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && !isAllowedOrigin(origin)) {
+    return res.status(403).json({ error: 'Origin not allowed by CORS' });
+  }
+  next();
+});
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 
 app.use((req, res, next) => {
