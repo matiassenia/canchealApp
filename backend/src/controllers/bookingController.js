@@ -1,7 +1,7 @@
 // 📆 Controlador de Reservas (`bookingController.js`)
-const { PrismaClient, BookingStatus } = require('@prisma/client');
+const { BookingStatus, Prisma } = require('@prisma/client');
+const prisma = require('../lib/prisma');
 const { sendError } = require('../utils/errorResponse');
-const prisma = new PrismaClient();
 
 const ISO_DATE_TIME_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?(?:Z|[+-]\d{2}:\d{2})$/;
 
@@ -22,6 +22,16 @@ function isIsoDateTime(value) {
 function validateBookingStatus(status) {
   const allowed = new Set(Object.values(BookingStatus));
   return allowed.has(status);
+}
+
+function canTransitionBooking(currentStatus, nextStatus) {
+  const allowedTransitions = {
+    [BookingStatus.PENDING]: new Set([BookingStatus.CONFIRMED, BookingStatus.CANCELLED]),
+    [BookingStatus.CONFIRMED]: new Set([BookingStatus.CANCELLED]),
+    [BookingStatus.CANCELLED]: new Set([])
+  };
+
+  return allowedTransitions[currentStatus] && allowedTransitions[currentStatus].has(nextStatus);
 }
 
 function parseDate(value) {
@@ -66,36 +76,63 @@ exports.createBooking = async (req, res) => {
   }
 
   try {
-    // Overlap check (mismo field, no canceladas)
-    const conflict = await prisma.booking.findFirst({
-      where: {
-        fieldId: numericFieldId,
-        status: { not: BookingStatus.CANCELLED },
-        startAt: { lt: parsedEnd },
-        endAt: { gt: parsedStart }
-      },
-      select: { id: true, startAt: true, endAt: true, status: true }
-    });
-
-    if (conflict) {
-      return res.status(409).json({
-        error: 'Horario no disponible: se superpone con otra reserva.',
-        conflict
+    const booking = await prisma.$transaction(async (tx) => {
+      const field = await tx.field.findUnique({
+        where: { id: numericFieldId },
+        select: { id: true }
       });
-    }
 
-    const booking = await prisma.booking.create({
-      data: {
-        userId,
-        fieldId: numericFieldId,
-        startAt: parsedStart,
-        endAt: parsedEnd,
-        status: BookingStatus.PENDING
+      if (!field) {
+        const error = new Error('Cancha no encontrada.');
+        error.statusCode = 404;
+        throw error;
       }
+
+      // Overlap check (mismo field, no canceladas) inside the transaction to reduce double-booking races.
+      const conflict = await tx.booking.findFirst({
+        where: {
+          fieldId: numericFieldId,
+          status: { not: BookingStatus.CANCELLED },
+          startAt: { lt: parsedEnd },
+          endAt: { gt: parsedStart }
+        },
+        select: { id: true, startAt: true, endAt: true, status: true }
+      });
+
+      if (conflict) {
+        const error = new Error('Horario no disponible: se superpone con otra reserva.');
+        error.statusCode = 409;
+        error.conflict = conflict;
+        throw error;
+      }
+
+      return tx.booking.create({
+        data: {
+          userId,
+          fieldId: numericFieldId,
+          startAt: parsedStart,
+          endAt: parsedEnd,
+          status: BookingStatus.PENDING
+        }
+      });
+    }, {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable
     });
 
     res.status(201).json(booking);
   } catch (err) {
+    if (err.statusCode === 409) {
+      return res.status(409).json({ error: err.message, conflict: err.conflict });
+    }
+
+    if (err.statusCode === 404) {
+      return res.status(404).json({ error: err.message });
+    }
+
+    if (err.code === 'P2034') {
+      return res.status(409).json({ error: 'Horario no disponible: intenta nuevamente.' });
+    }
+
     console.error('Error en createBooking:', err);
     sendError(res, err, { status: 400, message: 'No se pudo crear la reserva.' });
   }
@@ -140,16 +177,28 @@ exports.updateBookingStatus = async (req, res) => {
   }
 
   try {
-    const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: { field: { select: { club: { select: { ownerId: true } } } } }
+    });
 
     if (!booking) {
       return res.status(404).json({ error: 'Reserva no encontrada.' });
     }
 
-    const isOwner = booking.userId === userId;
+    if (!canTransitionBooking(booking.status, status)) {
+      return res.status(400).json({ error: 'Transición de estado inválida.' });
+    }
+
+    const isBookingUser = booking.userId === userId;
+    const isClubOwner = booking.field && booking.field.club && booking.field.club.ownerId === userId;
     const isAdmin = role === 'ADMIN';
 
-    if (!isOwner && !isAdmin) {
+    if (isBookingUser && status !== BookingStatus.CANCELLED && !isAdmin) {
+      return res.status(403).json({ error: 'Los usuarios solo pueden cancelar sus reservas.' });
+    }
+
+    if (!isBookingUser && !isClubOwner && !isAdmin) {
       return res.status(403).json({ error: 'No tienes permisos para actualizar esta reserva.' });
     }
 

@@ -11,12 +11,18 @@ export default function withAuth(Component) {
       if (!token) {
         router.replace('/login');
       } else {
-        setVerified(true)
+        setVerified(true);
       }
-    }, []);
+    }, [router]);
 
     if (!verified) {
-      return null;
+      return (
+        <div className="grid min-h-screen place-items-center bg-[#f6f8f5] px-4">
+          <div className="rounded-2xl border border-emerald-950/10 bg-white p-6 text-center shadow-sm">
+            <p className="text-sm font-bold text-emerald-900">Verificando sesion...</p>
+          </div>
+        </div>
+      );
     }
     return <Component {...props} />;
   };

@@ -3,18 +3,13 @@ import { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import { apiFetch } from '../lib/api';
 import ui from '../lib/ui';
+import { PageHeader, StateBlock, StatusBadge } from '../components/ui-kit';
 
 function MyBookings() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [feedback, setFeedback] = useState('');
   const [cancellingBookingId, setCancellingBookingId] = useState(null);
-
-  const getStatusStyles = (status) => {
-    if (status === 'CONFIRMED') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-    if (status === 'CANCELLED') return 'bg-rose-50 text-rose-700 border-rose-200';
-    return 'bg-amber-50 text-amber-700 border-amber-200';
-  };
 
   const formatDateTime = (isoValue) => {
     if (!isoValue) return '-';
@@ -38,8 +33,7 @@ function MyBookings() {
       if (!res.ok) throw new Error(data.error || 'No se pudieron cargar tus reservas.');
       setBookings(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Error fetching bookings:', err);
-      setFeedback(`❌ ${err.message}`);
+      setFeedback(err.message);
     } finally {
       setLoading(false);
     }
@@ -63,24 +57,58 @@ function MyBookings() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al cancelar');
 
-      setFeedback('✅ Reserva cancelada correctamente.');
+      setFeedback('Reserva cancelada correctamente.');
 
       fetchBookings();
     } catch (err) {
-      console.error('Cancelación fallida:', err);
-      setFeedback(`❌ ${err.message}`);
+      setFeedback(err.message);
     } finally {
       setCancellingBookingId(null);
     }
   };
 
+  const now = new Date();
+  const upcoming = bookings.filter((booking) => booking.status !== 'CANCELLED' && new Date(booking.startAt) >= now);
+  const past = bookings.filter((booking) => booking.status !== 'CANCELLED' && new Date(booking.startAt) < now);
+  const cancelled = bookings.filter((booking) => booking.status === 'CANCELLED');
+
+  const renderBookings = (items) => (
+    <ul className="space-y-4">
+      {items.map((b) => {
+        const isCancelled = b.status === 'CANCELLED';
+        const isCancelling = cancellingBookingId === b.id;
+        return (
+          <li key={b.id} className={`rounded-[1.25rem] border p-4 shadow-sm ${isCancelled ? 'border-rose-200 bg-rose-50/60' : 'border-emerald-950/10 bg-white'}`}>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <p className="text-lg font-black text-slate-950">{b.field?.name || `Cancha #${b.fieldId}`}</p>
+                  <StatusBadge status={b.status} />
+                </div>
+                <p className="text-sm text-slate-700"><span className="font-bold">Club:</span> {b.field?.club?.name || 'No informado'}</p>
+                <p className="text-sm text-slate-700"><span className="font-bold">Inicio:</span> {formatDateTime(b.startAt)}</p>
+                <p className="text-sm text-slate-700"><span className="font-bold">Fin:</span> {formatDateTime(b.endAt)}</p>
+                <p className="mt-1 text-sm font-bold text-emerald-800">Precio a consultar</p>
+              </div>
+              <button
+                onClick={() => handleCancel(b.id)}
+                disabled={isCancelled || isCancelling}
+                className="rounded-xl bg-rose-600 px-4 py-3 text-sm font-black text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+              >
+                {isCancelled ? 'Cancelada' : isCancelling ? 'Cancelando...' : 'Cancelar'}
+              </button>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+
   return (
     <div className={`${ui.page} ${ui.pageGradient}`}>
       <Navbar />
       <div className={ui.container}>
-        <span className={ui.badgeSuccess}>Seguimiento de reservas</span>
-        <h1 className={ui.title}>Mis Reservas</h1>
-        <p className={`${ui.subtitle} mb-6`}>Consulta estado, horario y cancha de cada reserva.</p>
+        <PageHeader eyebrow="Seguimiento de reservas" title="Mis reservas" description="Consulta tus proximos turnos, reservas anteriores y cancelaciones." />
 
         {feedback && (
           <div className={`${ui.panelInfo} mb-4 p-3 text-sm font-semibold text-slate-700`}>
@@ -89,47 +117,24 @@ function MyBookings() {
         )}
 
         {loading ? (
-          <div className={`${ui.card} p-6 text-sm text-slate-600`}>
-            Cargando reservas...
-          </div>
+          <div className={`${ui.card} p-6 text-sm font-semibold text-slate-600`}>Cargando reservas...</div>
         ) : bookings.length === 0 ? (
-          <div className={`${ui.card} p-8 text-center`}>
-            <p className="font-semibold text-slate-900">Aun no tienes reservas activas.</p>
-            <p className="mt-1 text-sm text-slate-600">Explora clubes y reserva tu proximo turno.</p>
-          </div>
+          <StateBlock title="Todavia no tenes reservas" description="Explora clubes y reserva tu proximo turno." />
         ) : (
-          <ul className="space-y-4">
-            {bookings.map((b) => {
-              const isCancelled = b.status === 'CANCELLED';
-              const isCancelling = cancellingBookingId === b.id;
-              return (
-              <li
-                key={b.id}
-                className={`rounded-2xl border p-4 shadow-sm ${isCancelled ? 'border-rose-200 bg-rose-50/40' : 'border-slate-200 bg-white'}`}
-              >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <div className="mb-2 flex items-center gap-2">
-                      <p className="text-lg font-bold text-slate-900">{b.field?.name || `Cancha #${b.fieldId}`}</p>
-                      <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${getStatusStyles(b.status)}`}>
-                        {b.status || 'PENDING'}
-                      </span>
-                    </div>
-                    <p className="text-sm text-slate-700"><span className="font-semibold">Inicio:</span> {formatDateTime(b.startAt)}</p>
-                    <p className="text-sm text-slate-700"><span className="font-semibold">Fin:</span> {formatDateTime(b.endAt)}</p>
-                    <p className="text-sm text-slate-600">Club: {b.field?.club?.name || '-'}</p>
-                  </div>
-                  <button
-                    onClick={() => handleCancel(b.id)}
-                    disabled={isCancelled || isCancelling}
-                    className="rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-                  >
-                    {isCancelled ? 'Cancelada' : isCancelling ? 'Cancelando...' : 'Cancelar'}
-                  </button>
-                </div>
-              </li>
-            );})}
-          </ul>
+          <div className="space-y-8">
+            <section>
+              <h2 className="mb-3 text-xl font-black text-slate-950">Proximas</h2>
+              {upcoming.length ? renderBookings(upcoming) : <StateBlock title="No tenes reservas proximas" description="Cuando reserves un turno futuro aparecera aca." />}
+            </section>
+            <section>
+              <h2 className="mb-3 text-xl font-black text-slate-950">Pasadas</h2>
+              {past.length ? renderBookings(past) : <StateBlock title="No hay reservas pasadas" />}
+            </section>
+            <section>
+              <h2 className="mb-3 text-xl font-black text-slate-950">Canceladas</h2>
+              {cancelled.length ? renderBookings(cancelled) : <StateBlock title="No hay reservas canceladas" />}
+            </section>
+          </div>
         )}
       </div>
     </div>

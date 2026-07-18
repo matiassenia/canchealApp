@@ -8,9 +8,12 @@ import Navbar from '../components/Navbar';
 import withAuth from '../components/withAuth';
 import { apiFetch } from '../lib/api';
 import ui from '../lib/ui';
+import { ClubCard, PageHeader, Pagination, SkeletonCard, StateBlock } from '../components/ui-kit';
 
 function Clubs() {
   const [clubs, setClubs] = useState([]);
+  const [pagination, setPagination] = useState(null);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const router = useRouter();
@@ -20,7 +23,7 @@ function Clubs() {
       setLoading(true);
       setError('');
       try {
-        const res = await apiFetch('/clubs');
+        const res = await apiFetch(`/clubs?page=${page}&limit=12`);
 
         if (res.status === 401 || res.status === 403) {
           localStorage.removeItem('token');
@@ -29,7 +32,8 @@ function Clubs() {
         }
 
         const data = await res.json();
-        setClubs(Array.isArray(data) ? data : (data.clubs || []));
+        setClubs(Array.isArray(data) ? data : (data.data || data.clubs || []));
+        setPagination(data.pagination || null);
 
       } catch (err) {
         console.error('Error al obtener clubes:', err);
@@ -40,57 +44,38 @@ function Clubs() {
     };
 
     fetchClubs();
-  }, [router]);
+  }, [router, page]);
 
   return (
     <div className={`${ui.page} ${ui.pageGradient}`}>
       <Navbar />
       <div className={ui.container}>
-        <div className="mb-8 text-center">
-          <span className={ui.badgeSuccess}>Descubrimiento local</span>
-          <h1 className={ui.title}>Clubes disponibles</h1>
-          <p className={ui.subtitle}>Encontra tu cancha ideal y reserva en minutos.</p>
-        </div>
+        <PageHeader
+          eyebrow="Descubrimiento local"
+          title="Clubes disponibles"
+          description="Encontra clubes reales, revisa sus canchas y reserva tu proximo turno."
+          actions={<Link href="/explore" className={ui.buttonSecondary}>Explorar con filtros</Link>}
+        />
+
+        {pagination && !loading && !error && (
+          <p className="mb-4 text-center text-sm text-slate-600">
+            Mostrando {clubs.length} de {pagination.total} clubes
+          </p>
+        )}
 
         {loading ? (
-          <div className={`${ui.card} p-6 text-sm text-slate-600`}>Cargando clubes...</div>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">{[1, 2, 3, 4, 5, 6].map((item) => <SkeletonCard key={item} />)}</div>
         ) : error ? (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700">{error}</div>
+          <StateBlock title="No se pudieron cargar los clubes" description={error} tone="error" action={<button type="button" onClick={() => setPage(1)} className={ui.buttonSecondary}>Intentar nuevamente</button>} />
         ) : clubs.length === 0 ? (
-          <div className={`${ui.card} p-8 text-center`}>
-            <p className="font-semibold text-slate-900">No hay clubes disponibles por el momento.</p>
-            <p className="mt-1 text-sm text-slate-600">Vuelve a intentar en unos minutos.</p>
-          </div>
+          <StateBlock title="No hay clubes disponibles por el momento" description="Cuando los propietarios publiquen clubes, apareceran en este listado." />
         ) : (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {clubs.map((club) => (
-            <article key={club.id} className={`overflow-hidden ${ui.card} ${ui.cardHover}`}>
-              <div className="h-28 bg-gradient-to-r from-emerald-600 via-green-600 to-lime-600" />
-              <div className="p-5">
-                <p className={ui.badge}>
-                  Zona {club.zone || 'Sin zona'}
-                </p>
-                <h2 className="text-xl font-bold text-slate-900">{club.name}</h2>
-                <p className="mt-2 text-sm text-slate-600">{club.address}</p>
-
-                <div className="mt-4 flex gap-2">
-                  <Link
-                    href={`/clubs/${club.id}`}
-                    className={`inline-block w-full text-center ${ui.buttonPrimary}`}
-                  >
-                    Ver perfil
-                  </Link>
-                  <button
-                    onClick={() => router.push(`/availability?clubId=${club.id}`)}
-                    className={`inline-block w-full ${ui.buttonSecondary}`}
-                  >
-                    Reservar
-                  </button>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
+          <>
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {clubs.map((club) => <ClubCard key={club.id} club={club} />)}
+            </div>
+            <Pagination pagination={pagination} onPageChange={setPage} />
+          </>
         )}
       </div>
     </div>

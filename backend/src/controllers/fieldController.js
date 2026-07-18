@@ -1,8 +1,7 @@
 // 🏟️ Controlador de Canchas (`fieldController.js`)
 //js
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../lib/prisma');
 const { sendError } = require('../utils/errorResponse');
-const prisma = new PrismaClient();
 
 exports.getFields = async (req, res) => {
   try {

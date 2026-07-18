@@ -8,8 +8,9 @@ export default function Logout() {
 
   useEffect(() => {
     localStorage.removeItem('token');
+    localStorage.removeItem('role');
     router.replace('/login');
-  }, []);
+  }, [router]);
 
   return null;
 }

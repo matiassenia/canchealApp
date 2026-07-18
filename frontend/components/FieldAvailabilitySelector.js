@@ -14,14 +14,9 @@ export default function FieldAvailabilitySelector({ onChange, initialAvailabilit
   const [selectedSlots, setSelectedSlots] = useState([]);
 
   useEffect(() => {
-  const stringify = (arr) => JSON.stringify(arr.sort((a, b) => a.weekday - b.weekday));
-  if (stringify(selectedSlots) !== stringify(initialAvailability)) {
-    setSelectedSlots(initialAvailability);
-  }
+    const normalize = (arr) => [...arr].sort((a, b) => a.weekday - b.weekday || a.startTime.localeCompare(b.startTime));
+    setSelectedSlots(normalize(initialAvailability));
   }, [initialAvailability]);
-
-
-  
 
   const toggleSlot = (weekday, time) => {
     const startTime = time;
@@ -72,31 +67,37 @@ export default function FieldAvailabilitySelector({ onChange, initialAvailabilit
   };
 
   return (
-    <div className="overflow-auto border rounded-lg max-h-[80vh]">
+    <div className="max-h-[80vh] overflow-auto rounded-2xl border border-emerald-950/10 bg-white">
       <table className="min-w-full table-fixed border-collapse">
         <thead>
           <tr>
-            <th className="border p-2 w-20 bg-gray-100">Hora</th>
-            {weekdays.map((day, i) => (
-              <th key={i} className="border p-2 text-sm bg-gray-100 text-center">{day}</th>
+            <th className="w-20 border border-emerald-950/10 bg-emerald-50 p-2 text-xs font-black text-emerald-950">Hora</th>
+            {weekdays.map((day) => (
+              <th key={day} className="border border-emerald-950/10 bg-emerald-50 p-2 text-center text-xs font-black text-emerald-950">{day}</th>
             ))}
           </tr>
         </thead>
         <tbody>
           {intervals.map((time, idx) => (
             <tr key={idx}>
-              <td className="border px-2 text-xs text-gray-600">{time}</td>
+              <td className="border border-emerald-950/10 px-2 text-xs font-semibold text-slate-600">{time}</td>
               {weekdays.map((_, dayIdx) => (
                 <td
                   key={dayIdx}
-                  className={`border cursor-pointer text-center text-xs ${
+                  className={`border border-emerald-950/10 text-center text-xs ${
                     isSelected(dayIdx + 1, time)
-                      ? 'bg-blue-500 text-white'
-                      : 'hover:bg-blue-100'
+                      ? 'bg-emerald-700 text-white'
+                      : 'hover:bg-lime-100'
                   }`}
-                  onClick={() => toggleSlot(dayIdx + 1, time)}
                 >
-                  {isSelected(dayIdx + 1, time) ? '✓' : ''}
+                  <button
+                    type="button"
+                    onClick={() => toggleSlot(dayIdx + 1, time)}
+                    className="h-9 w-full font-black"
+                    aria-label={`Alternar ${weekdays[dayIdx]} ${time}`}
+                  >
+                    {isSelected(dayIdx + 1, time) ? '✓' : ''}
+                  </button>
                 </td>
               ))}
             </tr>

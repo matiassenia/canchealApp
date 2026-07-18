@@ -2,7 +2,10 @@
 const jwt = require('jsonwebtoken');
 
 module.exports = (req, res, next) => {
-  console.log('🔐 authMiddleware ejecutado en:', req.path);
+  if (!process.env.JWT_SECRET) {
+    return res.status(500).json({ error: 'Configuración inválida del servidor.' });
+  }
+
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Token missing or invalid' });

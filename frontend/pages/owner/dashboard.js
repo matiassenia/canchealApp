@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import Navbar from '../../components/Navbar';
 import { apiFetch } from '../../lib/api';
 import ui from '../../lib/ui';
+import { PageHeader, StateBlock } from '../../components/ui-kit';
 
 const decodeToken = (token) => {
   try {
@@ -25,13 +26,12 @@ export default function OwnerDashboard() {
   const [creatingClub, setCreatingClub] = useState(false);
   const router = useRouter();
 
-  const fetchClubs = async (ownerId) => {
+  const fetchClubs = async () => {
     try {
-      const res = await apiFetch('/clubs');
+      const res = await apiFetch('/clubs/mine');
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'No se pudieron cargar los clubes.');
-      const allClubs = Array.isArray(data) ? data : [];
-      setClubs(allClubs.filter((club) => club.ownerId === ownerId));
+      setClubs(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error al obtener clubes:', err);
       setError(err.message);
@@ -51,8 +51,8 @@ export default function OwnerDashboard() {
     }
 
     setOwner(decoded);
-    fetchClubs(decoded.id).finally(() => setLoading(false));
-  }, []);
+    fetchClubs().finally(() => setLoading(false));
+  }, [router]);
 
   const handleCreateClub = async (e) => {
     e.preventDefault();
@@ -91,7 +91,7 @@ export default function OwnerDashboard() {
       setAddress('');
       setZone('');
       setDescription('');
-      fetchClubs(decoded.id); // refresca clubes
+      fetchClubs();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -100,30 +100,19 @@ export default function OwnerDashboard() {
   };
 
   const activeFields = clubs.reduce((acc, club) => acc + (club.fields?.length || 0), 0);
-  const todayReservations = Math.max(0, Math.round(activeFields * 1.4));
-  const occupancyEstimate = `${Math.min(92, 30 + activeFields * 6)}%`;
-  const revenueEstimate = `$${(todayReservations * 12000).toLocaleString('es-AR')}`;
 
   const statCards = [
-    { label: 'Reservas de hoy', value: todayReservations, hint: 'Estimado operativo' },
-    { label: 'Ocupacion', value: occupancyEstimate, hint: 'Estimado por canchas activas' },
-    { label: 'Canchas activas', value: activeFields, hint: 'Total publicado' },
-    { label: 'Ingreso estimado', value: revenueEstimate, hint: 'Placeholder comercial' }
+    { label: 'Clubes publicados', value: clubs.length, hint: 'Datos reales de tus clubes' },
+    { label: 'Canchas activas', value: activeFields, hint: 'Total configurado' }
   ];
 
   return (
     <div className={`${ui.page} ${ui.pageGradient}`}>
       <Navbar />
       <div className={ui.container}>
-        <div className="mb-6">
-          <span className={ui.badgeWarn}>Panel operativo</span>
-          <h1 className={ui.title}>Panel del Club</h1>
-          <p className={ui.subtitle}>
-            {owner?.role === 'OWNER' ? 'Vista operativa para dueños' : 'Vista operativa'} - gestiona clubes, canchas y disponibilidad.
-          </p>
-        </div>
+        <PageHeader eyebrow="Panel operativo" title="Panel del club" description={`${owner?.role === 'OWNER' ? 'Vista para propietarios' : 'Vista operativa'} para crear clubes, cargar canchas y gestionar disponibilidad.`} />
 
-        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {statCards.map((stat) => (
             <article key={stat.label} className={`${ui.card} p-4`}>
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{stat.label}</p>
@@ -138,7 +127,9 @@ export default function OwnerDashboard() {
             <h2 className="text-lg font-bold text-slate-900">Agregar nuevo club</h2>
             <p className="mb-4 mt-1 text-sm text-slate-600">Publica un nuevo club y comienza a recibir reservas.</p>
 
+            <label htmlFor="club-name" className={ui.label}>Nombre del club</label>
             <input
+              id="club-name"
               type="text"
               placeholder="Nombre del club"
               value={name}
@@ -146,7 +137,9 @@ export default function OwnerDashboard() {
               className={`${ui.input} mb-3`}
               required
             />
+            <label htmlFor="club-address" className={ui.label}>Direccion</label>
             <input
+              id="club-address"
               type="text"
               placeholder="Direccion"
               value={address}
@@ -154,14 +147,18 @@ export default function OwnerDashboard() {
               className={`${ui.input} mb-3`}
               required
             />
+            <label htmlFor="club-zone" className={ui.label}>Zona</label>
             <input
+              id="club-zone"
               type="text"
               placeholder="Zona"
               value={zone}
               onChange={(e) => setZone(e.target.value)}
               className={`${ui.input} mb-3`}
             />
+            <label htmlFor="club-description" className={ui.label}>Descripcion</label>
             <textarea
+              id="club-description"
               placeholder="Descripcion"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -186,12 +183,9 @@ export default function OwnerDashboard() {
             </div>
 
             {loading ? (
-              <p className="text-sm text-slate-600">Cargando clubes...</p>
+              <p className="text-sm font-semibold text-slate-600">Cargando clubes...</p>
             ) : clubs.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-slate-300 p-4">
-                <p className="font-semibold text-slate-900">Aun no tienes clubes creados.</p>
-                <p className="mt-1 text-sm text-slate-600">Crea tu primer club para empezar a gestionar disponibilidad y reservas.</p>
-              </div>
+              <StateBlock title="Aun no tenes clubes creados" description="Crea tu primer club para empezar a gestionar disponibilidad y reservas." />
             ) : (
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 {clubs.map((club) => (
@@ -225,20 +219,8 @@ export default function OwnerDashboard() {
         </div>
 
         <section className={`mt-6 ${ui.card} p-6`}>
-          <h2 className="text-lg font-bold text-slate-900">Reservas de hoy</h2>
-          <p className="mb-3 mt-1 text-sm text-slate-600">Vista operativa simplificada para seguimiento rapido.</p>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            {[...Array(Math.min(4, Math.max(1, todayReservations > 0 ? 3 : 1)))].map((_, idx) => (
-              <div key={idx} className="rounded-lg border border-slate-200 p-3">
-                <p className="text-sm font-semibold text-slate-900">Cancha #{idx + 1}</p>
-                <p className="text-xs text-slate-600">19:00 - 20:00</p>
-                <span className="mt-2 inline-block rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
-                  PENDIENTE
-                </span>
-              </div>
-            ))}
-          </div>
-          <p className="mt-3 text-xs text-slate-500">Los datos detallados de reservas por club se amplian en una fase posterior.</p>
+          <h2 className="text-lg font-bold text-slate-900">Reservas operativas</h2>
+          <p className="mt-1 text-sm text-slate-600">Los endpoints actuales no exponen reservas por owner. Se mantiene este espacio listo para conectar datos reales en una fase posterior.</p>
         </section>
       </div>
     </div>

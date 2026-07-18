@@ -1,3 +1,30 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --ca-bg: #f6f8f5;
+  --ca-ink: #102116;
+  --ca-muted: #667365;
+  --ca-grass: #166534;
+  --ca-lime: #84cc16;
+  --ca-line: #dbe7d7;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--ca-bg);
+  color: var(--ca-ink);
+}
+
+::selection {
+  background: rgba(132, 204, 22, 0.3);
+}
+
+*:focus-visible {
+  outline: 3px solid rgba(132, 204, 22, 0.6);
+  outline-offset: 2px;
+}

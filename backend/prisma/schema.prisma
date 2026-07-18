@@ -39,6 +39,9 @@ model Club {
   ownerId     Int
   owner       User    @relation("ClubOwner", fields: [ownerId], references: [id])
   fields      Field[]
+
+  @@index([ownerId])
+  @@index([zone])
 }
 
 model Field {
@@ -50,6 +53,8 @@ model Field {
   club     Club       @relation(fields: [clubId], references: [id])
   bookings Booking[]
   availability Availability[]
+
+  @@index([clubId])
 }
 
 model Availability {
@@ -59,6 +64,8 @@ model Availability {
   weekday   Int     // 0=Domingo ... 6=Sábado
   startTime String
   endTime   String
+
+  @@index([fieldId, weekday])
 }
 
 model Booking {
@@ -74,6 +81,10 @@ model Booking {
   endAt     DateTime
 
   status    BookingStatus @default(PENDING)
+
+  @@index([fieldId, startAt, endAt])
+  @@index([userId, startAt])
+  @@index([status])
 }
 
 

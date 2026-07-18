@@ -2,9 +2,8 @@
 
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../lib/prisma');
 const { sendError } = require('../utils/errorResponse');
-const prisma = new PrismaClient();
 
 exports.register = async (req, res) => {
   const { name, email, password } = req.body;
@@ -13,9 +12,10 @@ exports.register = async (req, res) => {
       return res.status(400).json({ error: 'name, email y password son requeridos.' });
     }
 
+    const normalizedEmail = String(email).trim().toLowerCase();
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
-      data: { name, email, password: hashedPassword }
+      data: { name: String(name).trim(), email: normalizedEmail, password: hashedPassword }
     });
     res.status(201).json({
       id: user.id,
@@ -40,8 +40,9 @@ exports.login = async (req, res) => {
       return res.status(500).json({ error: 'Configuración inválida del servidor.' });
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) return res.status(404).json({ error: 'User not found' });
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
 
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) return res.status(401).json({ error: 'Invalid credentials' });

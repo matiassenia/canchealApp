@@ -1,12 +1,19 @@
 // 🕓 Controlador de Disponibilidad (`availabilityController.js`)
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../lib/prisma');
 const { sendError } = require('../utils/errorResponse');
-const prisma = new PrismaClient();
 
 function parseDate(value) {
   const d = new Date(value);
   if (!value || Number.isNaN(d.getTime())) return null;
   return d;
+}
+
+function isValidSlot(slot) {
+  if (!slot || typeof slot !== 'object') return false;
+  const weekday = Number(slot.weekday);
+  if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6) return false;
+  if (!/^\d{2}:\d{2}$/.test(slot.startTime) || !/^\d{2}:\d{2}$/.test(slot.endTime)) return false;
+  return slot.startTime < slot.endTime;
 }
 
 async function getAvailability(req, res) {
@@ -56,15 +63,23 @@ async function setAvailability(req, res) {
       return res.status(403).json({ error: 'No tienes permisos para modificar esta disponibilidad.' });
     }
 
-    await prisma.availability.deleteMany({ where: { fieldId: numericFieldId } });
+    if (!slots.every(isValidSlot)) {
+      return res.status(400).json({ error: 'Slots de disponibilidad inválidos.' });
+    }
 
-    await prisma.availability.createMany({
-      data: slots.map(({ weekday, startTime, endTime }) => ({
+    await prisma.$transaction(async (tx) => {
+      await tx.availability.deleteMany({ where: { fieldId: numericFieldId } });
+
+      if (!slots.length) return;
+
+      await tx.availability.createMany({
+        data: slots.map(({ weekday, startTime, endTime }) => ({
         fieldId: numericFieldId,
         weekday,
         startTime,
         endTime
-      }))
+        }))
+      });
     });
 
     res.status(201).json({ message: 'Disponibilidad guardada correctamente' });

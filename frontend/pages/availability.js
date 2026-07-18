@@ -1,7 +1,7 @@
 
 // `pages/availability.js`
 //
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Navbar from '../components/Navbar';
@@ -9,46 +9,23 @@ import { apiFetch } from '../lib/api';
 import ui from '../lib/ui';
 
 const WEEKDAY_LABELS = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
-const SLOT_START_HOUR = 8;
-const SLOT_END_HOUR = 24;
-
-const buildTimeSlots = () => {
-  const times = [];
-  for (let hour = SLOT_START_HOUR; hour < SLOT_END_HOUR; hour += 1) {
-    times.push(`${String(hour).padStart(2, '0')}:00`);
-    times.push(`${String(hour).padStart(2, '0')}:30`);
-  }
-  return times;
-};
-
-const TIME_SLOTS = buildTimeSlots();
-
-const parseTimeToMinutes = (time) => {
-  const [h, m] = String(time).split(':').map(Number);
-  if (Number.isNaN(h) || Number.isNaN(m)) return null;
-  return h * 60 + m;
-};
-
-const isWithinRange = (time, start, end) => {
-  const t = parseTimeToMinutes(time);
-  const s = parseTimeToMinutes(start);
-  const e = parseTimeToMinutes(end);
-  if (t === null || s === null || e === null) return false;
-  return t >= s && t < e;
-};
 
 const getLocalDateString = () => {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 };
 
-const getEndTime = (startTime) => {
-  const startMinutes = parseTimeToMinutes(startTime);
-  if (startMinutes === null) return startTime;
-  const endMinutes = startMinutes + 60;
-  const hours = Math.floor(endMinutes / 60);
-  const minutes = endMinutes % 60;
-  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+const formatTime = (isoValue) => {
+  if (!isoValue) return '-';
+  const date = new Date(isoValue);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+};
+
+const formatDateLabel = (dateValue) => {
+  const date = new Date(`${dateValue}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('es-AR', { weekday: 'long', day: '2-digit', month: 'long' });
 };
 
 export default function Availability() {
@@ -58,7 +35,8 @@ export default function Availability() {
   const [fields, setFields] = useState([]);
   const [clubs, setClubs] = useState([]);
   const [selectedFieldId, setSelectedFieldId] = useState('');
-  const [availability, setAvailability] = useState([]);
+  const [slots, setSlots] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(getLocalDateString());
   const [message, setMessage] = useState('');
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -80,10 +58,9 @@ export default function Availability() {
     const fetchData = async () => {
       setIsLoadingFields(true);
       try {
-        const [fieldsRes, clubsRes] = await Promise.all([
-          apiFetch('/fields'),
-          apiFetch('/clubs')
-        ]);
+        const fieldsPath = selectedClubId ? `/fields/club/${selectedClubId}` : '/fields';
+        const clubsPath = selectedClubId ? `/clubs/${selectedClubId}` : '/clubs';
+        const [fieldsRes, clubsRes] = await Promise.all([apiFetch(fieldsPath), apiFetch(clubsPath)]);
 
         if (!fieldsRes.ok || !clubsRes.ok) {
           throw new Error('No se pudieron cargar clubes o canchas.');
@@ -93,7 +70,7 @@ export default function Availability() {
         const clubsData = await clubsRes.json();
 
         const allFields = Array.isArray(fieldsData) ? fieldsData : [];
-        const allClubs = Array.isArray(clubsData) ? clubsData : [];
+        const allClubs = Array.isArray(clubsData) ? clubsData : [clubsData];
 
         setFields(allFields);
         setClubs(allClubs);
@@ -131,23 +108,24 @@ export default function Availability() {
     const stillVisible = filteredFields.some((field) => String(field.id) === String(selectedFieldId));
     if (!stillVisible) {
       setSelectedFieldId(filteredFields[0] ? String(filteredFields[0].id) : '');
-      setAvailability([]);
-      setSelectedSlot(null);
+        setSlots([]);
+        setSelectedSlot(null);
     }
   }, [selectedFieldId, filteredFields]);
 
-  const handleCheckAvailability = async () => {
+  const handleCheckAvailability = useCallback(async () => {
     if (!selectedFieldId) return;
     setSelectedSlot(null);
     setMessage('');
     setIsLoadingAvailability(true);
     try {
-      const res = await apiFetch(`/availability/${selectedFieldId}`);
+      const res = await apiFetch(`/availability/${selectedFieldId}/slots?date=${selectedDate}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'No se pudo cargar la disponibilidad.');
-      setAvailability(Array.isArray(data) ? data : []);
-      if (!Array.isArray(data) || data.length === 0) {
-        setMessage('No hay horarios configurados para esta cancha.');
+      const parsedSlots = Array.isArray(data.slots) ? data.slots : [];
+      setSlots(parsedSlots);
+      if (parsedSlots.length === 0) {
+        setMessage('No hay horarios disponibles para la fecha seleccionada.');
       }
     } catch (err) {
       console.error('Error fetching availability:', err);
@@ -155,16 +133,20 @@ export default function Availability() {
     } finally {
       setIsLoadingAvailability(false);
     }
-  };
+  }, [selectedFieldId, selectedDate]);
+
+  useEffect(() => {
+    if (!selectedFieldId) return;
+    handleCheckAvailability();
+  }, [selectedFieldId, selectedDate, handleCheckAvailability]);
 
   const handleBooking = async () => {
     if (!selectedSlot || selectedSlot.status !== 'available') return;
 
     try {
       setIsSubmitting(true);
-      const localDate = getLocalDateString();
-      const startAt = new Date(`${localDate}T${selectedSlot.startTime}:00`).toISOString();
-      const endAt = new Date(`${localDate}T${selectedSlot.endTime}:00`).toISOString();
+      const startAt = selectedSlot.startAt;
+      const endAt = selectedSlot.endAt;
 
       const res = await apiFetch('/bookings', {
         method: 'POST',
@@ -180,51 +162,19 @@ export default function Availability() {
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al reservar');
-      setMessage(`✅ Reserva confirmada para ${selectedField ? selectedField.name : 'la cancha seleccionada'} (${selectedSlot.startTime}-${selectedSlot.endTime}).`);
+      setMessage(`Reserva confirmada para ${selectedField ? selectedField.name : 'la cancha seleccionada'} (${formatTime(selectedSlot.startAt)}-${formatTime(selectedSlot.endAt)}).`);
       setSelectedSlot(null);
+      handleCheckAvailability();
     } catch (err) {
       console.error('Error booking:', err);
-      setMessage(`❌ ${err.message}`);
+      setMessage(err.message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const now = new Date();
-  const currentWeekday = now.getDay();
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
-  const slotMatrix = Array.from({ length: 7 }, (_, i) => {
-    const weekday = i;
-    const rules = availability.filter((item) => Number(item.weekday) === weekday);
-
-    const slots = TIME_SLOTS.map((time) => {
-      const endTime = getEndTime(time);
-      const availableByRule = rules.some((rule) => {
-        if (!isWithinRange(time, rule.startTime, rule.endTime)) return false;
-        const slotEndMinutes = parseTimeToMinutes(endTime);
-        const ruleEndMinutes = parseTimeToMinutes(rule.endTime);
-        if (slotEndMinutes === null || ruleEndMinutes === null) return false;
-        return slotEndMinutes <= ruleEndMinutes;
-      });
-
-      let status = 'unavailable';
-      if (availableByRule) {
-        const slotStartMinutes = parseTimeToMinutes(time);
-        const isPastToday = weekday === currentWeekday && slotStartMinutes !== null && slotStartMinutes <= currentMinutes;
-        status = isPastToday ? 'past' : 'available';
-      }
-
-      return {
-        weekday,
-        startTime: time,
-        endTime,
-        status
-      };
-    });
-
-    return { weekday, label: WEEKDAY_LABELS[weekday], slots };
-  });
+  const selectedDateObj = new Date(`${selectedDate}T00:00:00`);
+  const selectedWeekday = Number.isNaN(selectedDateObj.getTime()) ? 0 : selectedDateObj.getDay();
 
   return (
     <div className={`${ui.page} ${ui.pageGradient}`}>
@@ -242,9 +192,9 @@ export default function Availability() {
           <span className="text-slate-700">Reserva</span>
         </div>
 
-        <span className={ui.badgeSuccess}>Paso final de reserva</span>
-        <h1 className="mb-1 text-2xl font-bold text-slate-900">Disponibilidad de Canchas</h1>
-        <p className="mb-5 text-sm text-slate-600">Selecciona una cancha, elegi un horario y confirma tu reserva.</p>
+        <span className={ui.badgeSuccess}>Reserva de cancha</span>
+        <h1 className="mb-1 text-3xl font-black tracking-tight text-slate-950">Elegí cancha, fecha y horario</h1>
+        <p className="mb-5 text-sm text-slate-600">El backend confirma la disponibilidad final antes de crear la reserva.</p>
 
         {(selectedClub || selectedField) && (
           <div className={`${ui.card} mb-4 p-4`}>
@@ -268,27 +218,38 @@ export default function Availability() {
           </div>
         ) : null}
 
-        <select
-          value={selectedFieldId}
-          onChange={(e) => setSelectedFieldId(e.target.value)}
-          className={`${ui.input} mb-4 max-w-md`}
-          disabled={isLoadingFields || filteredFields.length === 0}
-        >
-          <option value="">Seleccionar cancha</option>
-          {filteredFields.map((field) => (
-            <option key={field.id} value={field.id}>
-              {field.name} - {field.type}
-            </option>
-          ))}
-        </select>
-
-        <button
-          onClick={handleCheckAvailability}
-          disabled={!selectedFieldId || isLoadingFields || filteredFields.length === 0}
-          className={`mb-6 ${ui.buttonPrimary}`}
-        >
-          {isLoadingAvailability ? 'Cargando horarios...' : 'Ver disponibilidad'}
-        </button>
+        <section className={`${ui.card} mb-6 grid gap-4 p-4 md:grid-cols-3`}>
+          <div>
+            <label htmlFor="field" className={ui.label}>Cancha</label>
+            <select
+              id="field"
+              value={selectedFieldId}
+              onChange={(e) => setSelectedFieldId(e.target.value)}
+              className={ui.input}
+              disabled={isLoadingFields || filteredFields.length === 0}
+            >
+              <option value="">Seleccionar cancha</option>
+              {filteredFields.map((field) => (
+                <option key={field.id} value={field.id}>{field.name} - Futbol {field.type}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="date" className={ui.label}>Fecha</label>
+            <input
+              id="date"
+              type="date"
+              value={selectedDate}
+              min={getLocalDateString()}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className={ui.input}
+            />
+          </div>
+          <div className="rounded-2xl bg-emerald-50 p-4">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-800">Dia seleccionado</p>
+            <p className="mt-2 text-lg font-black capitalize text-slate-950">{formatDateLabel(selectedDate)}</p>
+          </div>
+        </section>
 
         {message && (
           <div className={`${ui.panelInfo} mb-4 p-3 text-sm font-semibold text-slate-700`}>
@@ -298,12 +259,14 @@ export default function Availability() {
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <section className={`lg:col-span-2 ${ui.card} p-4 sm:p-5`}>
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-slate-900">Horarios por dia</h2>
-              <div className="flex items-center gap-3 text-xs">
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-lg font-black text-slate-950">Horarios disponibles</h2>
+                <p className="text-sm text-slate-600">{WEEKDAY_LABELS[selectedWeekday]} · {formatDateLabel(selectedDate)}</p>
+              </div>
+              <div className="flex items-center gap-3 text-xs font-semibold">
                 <span className="inline-flex items-center gap-1 text-slate-600"><span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />Disponible</span>
-                <span className="inline-flex items-center gap-1 text-slate-600"><span className="h-2.5 w-2.5 rounded-full bg-rose-500" />No disponible / ocupado</span>
-                <span className="inline-flex items-center gap-1 text-slate-600"><span className="h-2.5 w-2.5 rounded-full bg-slate-400" />Pasado</span>
+                <span className="inline-flex items-center gap-1 text-slate-600"><span className="h-2.5 w-2.5 rounded-full bg-slate-300" />No disponible</span>
               </div>
             </div>
 
@@ -313,48 +276,26 @@ export default function Availability() {
               </div>
             )}
 
-            <div className="space-y-4">
-              {slotMatrix.map((day) => (
-                <div key={day.weekday}>
-                  <h3 className="mb-2 text-sm font-bold text-slate-700">{day.label}</h3>
-                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
-                    {day.slots.map((slot) => {
-                      const isSelected =
-                        selectedSlot &&
-                        selectedSlot.weekday === slot.weekday &&
-                        selectedSlot.startTime === slot.startTime;
-
-                      const isClickable = slot.status === 'available';
-
-                      let className = 'rounded-lg border px-2 py-2 text-xs font-semibold transition';
-                      if (slot.status === 'available') {
-                        className += ' border-emerald-300 bg-emerald-50 text-emerald-700';
-                      } else if (slot.status === 'past') {
-                        className += ' cursor-not-allowed border-slate-300 bg-slate-100 text-slate-500';
-                      } else {
-                        className += ' cursor-not-allowed border-rose-200 bg-rose-50 text-rose-600';
-                      }
-
-                      if (isSelected) {
-                        className += ' ring-2 ring-slate-900';
-                      }
-
-                      return (
-                        <button
-                          key={`${slot.weekday}-${slot.startTime}`}
-                          type="button"
-                          disabled={!isClickable}
-                          onClick={() => setSelectedSlot(slot)}
-                          className={className}
-                        >
-                          {slot.startTime}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
+            {slots.length === 0 && !isLoadingAvailability ? (
+              <div className="rounded-2xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">No hay horarios disponibles para esta fecha.</div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+                {slots.map((slot) => {
+                  const isSelected = selectedSlot && selectedSlot.startAt === slot.startAt;
+                  return (
+                    <button
+                      key={`${slot.startAt}-${slot.endAt}`}
+                      type="button"
+                      disabled={slot.available === false}
+                      onClick={() => setSelectedSlot({ ...slot, status: 'available' })}
+                      className={`rounded-xl border px-3 py-3 text-sm font-black transition ${isSelected ? 'border-emerald-900 bg-emerald-900 text-white ring-4 ring-lime-200' : 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:border-emerald-500'} disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400`}
+                    >
+                      {formatTime(slot.startAt)}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </section>
 
           <aside className={`${ui.card} p-4 sm:p-5`}>
@@ -365,9 +306,9 @@ export default function Availability() {
               <div className="mt-3 space-y-2 text-sm text-slate-700">
                 <p><span className="font-semibold">Cancha:</span> {selectedField ? selectedField.name : `#${selectedFieldId}`}</p>
                 <p><span className="font-semibold">Club:</span> {selectedClub ? selectedClub.name : 'Sin club seleccionado'}</p>
-                <p><span className="font-semibold">Dia:</span> {WEEKDAY_LABELS[selectedSlot.weekday]}</p>
-                <p><span className="font-semibold">Inicio:</span> {selectedSlot.startTime}</p>
-                <p><span className="font-semibold">Fin:</span> {selectedSlot.endTime}</p>
+                <p><span className="font-semibold">Fecha:</span> {formatDateLabel(selectedDate)}</p>
+                <p><span className="font-semibold">Inicio:</span> {formatTime(selectedSlot.startAt)}</p>
+                <p><span className="font-semibold">Fin:</span> {formatTime(selectedSlot.endAt)}</p>
                 <p><span className="font-semibold">Duracion:</span> 60 minutos</p>
                 <p><span className="font-semibold">Estado:</span> {selectedSlot.status === 'available' ? 'Disponible' : 'No disponible'}</p>
               </div>
